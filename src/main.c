@@ -1,11 +1,12 @@
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 #include "file.h"
+#include "shader.h"
 
 #define WINDOW_WIDTH	800
 #define WINDOW_HEIGHT	800
@@ -25,14 +26,20 @@ int main(void) {
 
 	GLuint shader_program;
 
+	GLuint texture;
+	GLint texture_width, texture_height, texture_channels;
+	GLubyte *texture_data;
+
 	GLfloat vertices[] = {
-		-0.5f, -0.5f, 0.0f,		1.0f, 0.0f, 0.0f,
-		 0.0f,  0.5f, 0.0f,		0.0f, 1.0f, 0.0f,
-		 0.5f, -0.5f, 0.0f,		0.0f, 0.0f, 1.0f,
+		-0.5f, -0.5f, 0.0f,		1.0f, 0.0f, 1.0f,	0.0f, 0.0f,
+		-0.5f,  0.5f, 0.0f,		1.0f, 0.0f, 0.0f,	0.0f, 1.0f,
+		 0.5f, -0.5f, 0.0f,		1.0f, 0.0f, 1.0f,	1.0f, 0.0f,
+		 0.5f,  0.5f, 0.0f,		1.0f, 0.0f, 0.0f,	1.0f, 1.0f,
 	};
 
 	GLuint indices[] = {
-		0, 1, 2
+		0, 1, 2,
+		1, 2, 3
 	};
 
 	if(!glfwInit()) {
@@ -63,91 +70,46 @@ int main(void) {
 
 	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
-	/* getting vao set up */
+	/* getting the buffers set up */
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
 
-	/* getting vbo set up */
 	glGenBuffers(1, &vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-	/* getting ebo set up */
 	glGenBuffers(1, &ebo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), NULL);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid *)(3 * sizeof(GLfloat)));
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), NULL);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid *)(3 * sizeof(GLfloat)));
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid *)(6 * sizeof(GLfloat)));
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
+	glEnableVertexAttribArray(2);
 
-	{ /* loading and compiling vertex shader */
-		GLuint vertex_shader;
-		GLuint fragment_shader;
-		GLchar *vertex_shader_source;
-		GLchar *fragment_shader_source;
+	shader_program = shader_create("res/shaders/vert.glsl", "res/shaders/frag.glsl");
 
-		vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-		vertex_shader_source = file_load_contents("res/shaders/vert.glsl");
-		glShaderSource(vertex_shader, 1, (const GLchar * const *)&vertex_shader_source, NULL);
-		glCompileShader(vertex_shader);
+	/* setting up texture-related shit */
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-		{
-			GLint success;
-			GLchar info_log[512];
-			glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &success);
-			if(!success) {
-				glGetShaderInfoLog(vertex_shader, 512, NULL, info_log);
-				printf("ERROR: Vertex shader fucked up: %s\n", info_log);
-				glfwTerminate();
-				return 1;
-			}
-		}
-
-		/* loading and compiling fragment shader */
-		fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-		fragment_shader_source = file_load_contents("res/shaders/frag.glsl");
-		glShaderSource(fragment_shader, 1, (const GLchar * const *)&fragment_shader_source, NULL);
-		glCompileShader(fragment_shader);
-
-		{
-			GLint success;
-			GLchar info_log[512];
-			glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &success);
-			if(!success) {
-				glGetShaderInfoLog(fragment_shader, 512, NULL, info_log);
-				printf("ERROR: Fragment shader fucked up: %s\n", info_log);
-				glfwTerminate();
-				return 1;
-			}
-		}
-
-		/* creating shader program and binding vert and frag */
-		shader_program = glCreateProgram();
-		glAttachShader(shader_program, vertex_shader);
-		glAttachShader(shader_program, fragment_shader);
-		glLinkProgram(shader_program);
-
-		{
-			GLint success;
-			GLchar info_log[512];
-			glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
-			if(!success) {
-				glGetProgramInfoLog(shader_program, 512, NULL, info_log);
-				printf("ERROR: Shader program fucked up: %s\n", info_log);
-				glfwTerminate();
-				return 1;
-			}
-		}
-
-		glUseProgram(shader_program);
-		glDeleteShader(vertex_shader);
-		glDeleteShader(fragment_shader);
-
-		free(vertex_shader_source);
-		free(fragment_shader_source);
+	stbi_set_flip_vertically_on_load(1);
+	texture_data = stbi_load("res/textures/test.png", &texture_width, &texture_height, &texture_channels, 0);
+	if(!texture_data) {
+		printf("ERROR: Texture fucked up.\n");
+		glfwTerminate();
+		return 1;
 	}
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture_width, texture_height, 0, GL_RGB, GL_UNSIGNED_BYTE, texture_data);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	stbi_image_free(texture_data);
 
 	/* main loop */
 	while(!glfwWindowShouldClose(window)) {
@@ -186,6 +148,7 @@ int main(void) {
 		glfwPollEvents();
 	}
 
+	glDeleteShader(shader_program);
 	glfwTerminate();
 
 	return 0;

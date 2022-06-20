@@ -2,10 +2,10 @@ CC=gcc
 INC=-I./include/ -I/usr/include -I/usr/local/include/
 LIB=-lglfw3 -lGL -lX11 -lpthread -lXrandr -lXi -ldl -lm
 
-CFLAGS=-ansi
+CFLAGS=-std=c99
 
-SRC=main.c glad.c file.c
-OBJ=main.o glad.o file.o
+SRC=main.c glad.c file.c shader.c
+OBJ=main.o glad.o file.o shader.o
 
 BIN=new-attempt
 
@@ -15,7 +15,7 @@ release: $(BIN)
 release: CFLAGS += -O2
 
 debug: $(BIN)
-debug: CFLAGS += -Og -g3 -Wall -Wextra -Wfloat-equal -Wundef -Wshadow -Wpointer-arith -Wcast-align -Wstrict-prototypes -Wstrict-overflow=5 -Wwrite-strings -Waggregate-return -Wcast-qual -Wswitch-default -Wswitch-enum -Wconversion -Wunreachable-code -Wformat=2
+debug: CFLAGS += -Og -g3 -Wall -Wextra -Werror
 
 run: release
 	clear
