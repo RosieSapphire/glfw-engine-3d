@@ -1,7 +1,9 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 #include "file.h"
 
@@ -15,25 +17,22 @@ int main(void) {
 	GLubyte draw_mode = 0;
 	GLubyte first_press = 0;
 
+	GLdouble time_elapsed = 0.0f;
+
 	GLuint vao;
 	GLuint vbo;
 	GLuint ebo;
 
-	GLchar *vertex_shader_source;
-	GLchar *fragment_shader_source;
-
 	GLuint shader_program;
 
 	GLfloat vertices[] = {
-		 0.5f,  0.5f, 0.0f,
-		 0.5f, -0.5f, 0.0f,
-		-0.5f, -0.5f, 0.0f,
-		-0.5f,  0.5f, 0.0f
+		-0.5f, -0.5f, 0.0f,		1.0f, 0.0f, 0.0f,
+		 0.0f,  0.5f, 0.0f,		0.0f, 1.0f, 0.0f,
+		 0.5f, -0.5f, 0.0f,		0.0f, 0.0f, 1.0f,
 	};
 
 	GLuint indices[] = {
-		0, 1, 3,
-		1, 2, 3
+		0, 1, 2
 	};
 
 	if(!glfwInit()) {
@@ -78,12 +77,16 @@ int main(void) {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), NULL);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), NULL);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid *)(3 * sizeof(GLfloat)));
 	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
 
 	{ /* loading and compiling vertex shader */
 		GLuint vertex_shader;
 		GLuint fragment_shader;
+		GLchar *vertex_shader_source;
+		GLchar *fragment_shader_source;
 
 		vertex_shader = glCreateShader(GL_VERTEX_SHADER);
 		vertex_shader_source = file_load_contents("res/shaders/vert.glsl");
@@ -141,14 +144,20 @@ int main(void) {
 		glUseProgram(shader_program);
 		glDeleteShader(vertex_shader);
 		glDeleteShader(fragment_shader);
+
+		free(vertex_shader_source);
+		free(fragment_shader_source);
 	}
 
 	/* main loop */
 	while(!glfwWindowShouldClose(window)) {
+		time_elapsed = glfwGetTime();
+
 		/* input */
 		if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 			glfwSetWindowShouldClose(window, 1);
 
+		/* toggling wireframe */
 		if(glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS && !first_press) {
 			draw_mode = !draw_mode;
 			first_press = 1;
@@ -167,6 +176,8 @@ int main(void) {
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		glUseProgram(shader_program);
+		glUniform4f(glGetUniformLocation(shader_program, "u_color"), 0.0f, (GLfloat)((sin(time_elapsed * 3.14159) + 1) / 2), 0.0f, 1.0f);
+
 		glBindVertexArray(vao);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
@@ -175,7 +186,6 @@ int main(void) {
 		glfwPollEvents();
 	}
 
-	free(vertex_shader_source);
 	glfwTerminate();
 
 	return 0;
