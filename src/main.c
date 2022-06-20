@@ -30,6 +30,10 @@ int main(void) {
 	GLint texture_width, texture_height, texture_channels;
 	GLubyte *texture_data;
 
+	GLuint texture_1;
+	GLint texture_1_width, texture_1_height, texture_1_channels;
+	GLubyte *texture_1_data;
+
 	GLfloat vertices[] = {
 		-0.5f, -0.5f, 0.0f,		1.0f, 0.0f, 1.0f,	0.0f, 0.0f,
 		-0.5f,  0.5f, 0.0f,		1.0f, 0.0f, 0.0f,	0.0f, 1.0f,
@@ -111,6 +115,24 @@ int main(void) {
 	glGenerateMipmap(GL_TEXTURE_2D);
 	stbi_image_free(texture_data);
 
+	glGenTextures(1, &texture_1);
+	glBindTexture(GL_TEXTURE_2D, texture_1);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	texture_1_data = stbi_load("res/textures/test1.png", &texture_1_width, &texture_1_height, &texture_1_channels, 0);
+	if(!texture_1_data) {
+		printf("ERROR: Texture fucked up.\n");
+		glfwTerminate();
+		return 1;
+	}
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture_1_width, texture_1_height, 0, GL_RGB, GL_UNSIGNED_BYTE, texture_1_data);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	stbi_image_free(texture_1_data);
+
 	/* main loop */
 	while(!glfwWindowShouldClose(window)) {
 		time_elapsed = glfwGetTime();
@@ -139,6 +161,13 @@ int main(void) {
 
 		glUseProgram(shader_program);
 		glUniform4f(glGetUniformLocation(shader_program, "u_color"), 0.0f, (GLfloat)((sin(time_elapsed * 3.14159) + 1) / 2), 0.0f, 1.0f);
+		glUniform1i(glGetUniformLocation(shader_program, "tex01"), 0);
+		glUniform1i(glGetUniformLocation(shader_program, "tex02"), 1);
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texture);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, texture_1);
 
 		glBindVertexArray(vao);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
