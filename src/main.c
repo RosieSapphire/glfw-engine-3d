@@ -12,6 +12,9 @@
 int main(void) {
 	GLFWwindow *window;
 
+	GLubyte draw_mode = 0;
+	GLubyte first_press = 0;
+
 	GLuint vao;
 	GLuint vbo;
 	GLuint ebo;
@@ -142,15 +145,29 @@ int main(void) {
 
 	/* main loop */
 	while(!glfwWindowShouldClose(window)) {
+		/* input */
 		if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 			glfwSetWindowShouldClose(window, 1);
+
+		if(glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS && !first_press) {
+			draw_mode = !draw_mode;
+			first_press = 1;
+		}
+
+		if(glfwGetKey(window, GLFW_KEY_Q) == GLFW_RELEASE)
+			first_press = 0;
+
+		/* drawing */
+		if(draw_mode)
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		else
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		glUseProgram(shader_program);
 		glBindVertexArray(vao);
-
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
