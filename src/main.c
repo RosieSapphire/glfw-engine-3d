@@ -163,6 +163,7 @@ int main(void) {
 		glUniform4f(glGetUniformLocation(shader_program, "u_color"), 0.0f, (GLfloat)((sin(time_elapsed * 3.14159) + 1) / 2), 0.0f, 1.0f);
 		glUniform1i(glGetUniformLocation(shader_program, "tex01"), 0);
 		glUniform1i(glGetUniformLocation(shader_program, "tex02"), 1);
+		glUniform1f(glGetUniformLocation(shader_program, "lerp"), (float)((sin(time_elapsed * 3.14159) + 1) / 2));
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture);
