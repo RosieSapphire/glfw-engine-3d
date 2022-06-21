@@ -14,6 +14,10 @@
 #define WINDOW_HEIGHT	800
 #define WINDOW_TITLE	"Attempt Numero Dos"
 
+#define CAM_MOVE_SPEED	6.0f
+#define CAM_LERP_SPEED	8.0f
+#define CAM_SENSITIVITY	0.1f
+
 int main(void) {
 	GLFWwindow *window;
 
@@ -24,9 +28,14 @@ int main(void) {
 	GLdouble time_last;
 	GLdouble time_delta;
 
+	GLdouble mouse_x, mouse_y;
+	GLfloat cam_rot_x = 90.0f;
+	GLfloat cam_rot_y = 0.0f;
+
 	vec3 cam_pos;
-	vec3 cam_tar;
+	vec3 cam_pos_end;
 	vec3 cam_dir;
+	vec3 cam_tar;
 	vec3 cam_up;
 	vec3 cam_right;
 
@@ -66,6 +75,11 @@ int main(void) {
 	glm_mat4_copy(GLM_MAT4_IDENTITY, matrix_transform);
 	glm_perspective(glm_rad(45.0f), WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 1000.0f, matrix_projection);
 	glm_mat4_copy(GLM_MAT4_IDENTITY, matrix_view);
+
+	glm_vec3_copy(GLM_YUP, cam_up);
+
+	glm_vec3_copy((vec3){0.0f, 0.0f, -2.0f}, cam_pos);
+	glm_vec3_copy(cam_pos, cam_pos_end);
 
 	if(!glfwInit()) {
 		printf("ERROR: GLFW fucked up.\n");
@@ -158,14 +172,33 @@ int main(void) {
 	time_last = time_now;
 
 	glEnable(GL_DEPTH_TEST);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	/* main loop */
+	glfwSetCursorPos(window, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
 	while(!glfwWindowShouldClose(window)) {
 		time_now = glfwGetTime();
 		time_delta = time_now - time_last;
 		time_last = time_now;
 
 		/* input */
+		glfwGetCursorPos(window, &mouse_x, &mouse_y);
+		mouse_x -= WINDOW_WIDTH / 2;
+		mouse_y -= WINDOW_HEIGHT / 2;
+
+		cam_rot_x += mouse_x * CAM_SENSITIVITY;
+		cam_rot_y -= mouse_y * CAM_SENSITIVITY;
+
+		cam_dir[0] = cos(glm_rad(cam_rot_x)) * cos(glm_rad(cam_rot_y));
+		cam_dir[1] = sin(glm_rad(cam_rot_y));
+		cam_dir[2] = sin(glm_rad(cam_rot_x)) * cos(glm_rad(cam_rot_y));
+		glm_normalize(cam_dir);
+
+		glm_cross(cam_dir, cam_up, cam_right);
+		glm_normalize(cam_right);
+
+		glfwSetCursorPos(window, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
+
 		if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 			glfwSetWindowShouldClose(window, 1);
 
@@ -178,35 +211,32 @@ int main(void) {
 		if(glfwGetKey(window, GLFW_KEY_Q) == GLFW_RELEASE)
 			first_press = 0;
 
-		if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-			cam_pos[0] -= (float)time_delta;
+		{ /* handing camera movement */
+			const float cam_speed = (float)time_delta * CAM_MOVE_SPEED;
+			vec3 cam_forward_vec;
+			vec3 cam_right_vec;
+			glm_vec3_scale(cam_dir, cam_speed, cam_forward_vec);
+			glm_vec3_scale(cam_right, cam_speed, cam_right_vec);
 
-		if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-			cam_pos[0] += (float)time_delta;
+			if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+				glm_vec3_add(cam_pos_end, cam_right_vec, cam_pos_end);
 
-		if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-			cam_pos[1] -= (float)time_delta;
+			if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+				glm_vec3_sub(cam_pos_end, cam_right_vec, cam_pos_end);
 
-		if(glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
-			cam_pos[1] += (float)time_delta;
+			if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+				glm_vec3_add(cam_pos_end, cam_forward_vec, cam_pos_end);
 
-		if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-			cam_pos[2] -= (float)time_delta;
+			if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+				glm_vec3_sub(cam_pos_end, cam_forward_vec, cam_pos_end);
+		}
 
-		if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-			cam_pos[2] += (float)time_delta;
-
-		glm_vec3_copy(GLM_VEC3_ZERO, cam_tar);
-		glm_vec3_sub(cam_tar, cam_pos, cam_dir);
-		glm_vec3_normalize(cam_dir);
-
-		glm_vec3_copy(GLM_YUP, cam_up);
-		glm_cross(cam_up, cam_dir, cam_right);
-		glm_vec3_normalize(cam_right);
+		glm_vec3_lerp(cam_pos, cam_pos_end, (float)time_delta * CAM_LERP_SPEED, cam_pos);
 
 		glm_mat4_copy(GLM_MAT4_IDENTITY, matrix_transform);
 		glm_mat4_copy(GLM_MAT4_IDENTITY, matrix_view);
 
+		glm_vec3_add(cam_pos, cam_dir, cam_tar);
 		glm_lookat(cam_pos, cam_tar, cam_up, matrix_view);
 
 		/* drawing */
