@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include <cglm/cglm.h>
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
@@ -18,7 +20,15 @@ int main(void) {
 	GLubyte draw_mode = 0;
 	GLubyte first_press = 0;
 
-	GLdouble time_elapsed = 0.0f;
+	GLdouble time_now;
+	GLdouble time_last;
+	GLdouble time_delta;
+
+	vec3 cam_pos;
+	vec3 cam_tar;
+	vec3 cam_dir;
+	vec3 cam_up;
+	vec3 cam_right;
 
 	GLuint vao;
 	GLuint vbo;
@@ -34,17 +44,28 @@ int main(void) {
 	GLint texture_1_width, texture_1_height, texture_1_channels;
 	GLubyte *texture_1_data;
 
+	mat4 matrix_transform;
+	mat4 matrix_projection;
+	mat4 matrix_view;
+
 	GLfloat vertices[] = {
-		-0.5f, -0.5f, 0.0f,		1.0f, 0.0f, 1.0f,	0.0f, 0.0f,
-		-0.5f,  0.5f, 0.0f,		1.0f, 0.0f, 0.0f,	0.0f, 1.0f,
-		 0.5f, -0.5f, 0.0f,		1.0f, 0.0f, 1.0f,	1.0f, 0.0f,
-		 0.5f,  0.5f, 0.0f,		1.0f, 0.0f, 0.0f,	1.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f,	1.0f, 1.0f, 1.0f,	0.0f, 0.0f, // 0 lbf
+		 0.5f, -0.5f,  0.5f,	1.0f, 1.0f, 1.0f,	1.0f, 0.0f, // 1 rbf
+		-0.5f, -0.5f, -0.5f,	1.0f, 1.0f, 1.0f,	0.0f, 0.0f, // 2 lbb
+		 0.5f, -0.5f, -0.5f,	1.0f, 1.0f, 1.0f,	1.0f, 0.0f, // 3 rbb
+		 0.0f,  0.5f,  0.0f,	1.0f, 1.0f, 1.0f,	0.5f, 1.0f, // 4 tip
 	};
 
 	GLuint indices[] = {
-		0, 1, 2,
-		1, 2, 3
+		0, 4, 1,
+		1, 4, 3,
+		3, 4, 2,
+		2, 4, 0,
 	};
+
+	glm_mat4_copy(GLM_MAT4_IDENTITY, matrix_transform);
+	glm_perspective(glm_rad(45.0f), WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 1000.0f, matrix_projection);
+	glm_mat4_copy(GLM_MAT4_IDENTITY, matrix_view);
 
 	if(!glfwInit()) {
 		printf("ERROR: GLFW fucked up.\n");
@@ -133,9 +154,16 @@ int main(void) {
 	glGenerateMipmap(GL_TEXTURE_2D);
 	stbi_image_free(texture_1_data);
 
+	time_now = glfwGetTime();
+	time_last = time_now;
+
+	glEnable(GL_DEPTH_TEST);
+
 	/* main loop */
 	while(!glfwWindowShouldClose(window)) {
-		time_elapsed = glfwGetTime();
+		time_now = glfwGetTime();
+		time_delta = time_now - time_last;
+		time_last = time_now;
 
 		/* input */
 		if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -150,6 +178,37 @@ int main(void) {
 		if(glfwGetKey(window, GLFW_KEY_Q) == GLFW_RELEASE)
 			first_press = 0;
 
+		if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+			cam_pos[0] -= (float)time_delta;
+
+		if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+			cam_pos[0] += (float)time_delta;
+
+		if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+			cam_pos[1] -= (float)time_delta;
+
+		if(glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+			cam_pos[1] += (float)time_delta;
+
+		if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+			cam_pos[2] -= (float)time_delta;
+
+		if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+			cam_pos[2] += (float)time_delta;
+
+		glm_vec3_copy(GLM_VEC3_ZERO, cam_tar);
+		glm_vec3_sub(cam_tar, cam_pos, cam_dir);
+		glm_vec3_normalize(cam_dir);
+
+		glm_vec3_copy(GLM_YUP, cam_up);
+		glm_cross(cam_up, cam_dir, cam_right);
+		glm_vec3_normalize(cam_right);
+
+		glm_mat4_copy(GLM_MAT4_IDENTITY, matrix_transform);
+		glm_mat4_copy(GLM_MAT4_IDENTITY, matrix_view);
+
+		glm_lookat(cam_pos, cam_tar, cam_up, matrix_view);
+
 		/* drawing */
 		if(draw_mode)
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -157,13 +216,15 @@ int main(void) {
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glUseProgram(shader_program);
-		glUniform4f(glGetUniformLocation(shader_program, "u_color"), 0.0f, (GLfloat)((sin(time_elapsed * 3.14159) + 1) / 2), 0.0f, 1.0f);
 		glUniform1i(glGetUniformLocation(shader_program, "tex01"), 0);
 		glUniform1i(glGetUniformLocation(shader_program, "tex02"), 1);
-		glUniform1f(glGetUniformLocation(shader_program, "lerp"), (float)((sin(time_elapsed * 3.14159) + 1) / 2));
+		glUniform1f(glGetUniformLocation(shader_program, "lerp"), (float)((sin(time_now * 3.14159) + 1) / 2));
+		glUniformMatrix4fv(glGetUniformLocation(shader_program, "transform"), 1, GL_FALSE, (const GLfloat *)matrix_transform);
+		glUniformMatrix4fv(glGetUniformLocation(shader_program, "projection"), 1, GL_FALSE, (const GLfloat *)matrix_projection);
+		glUniformMatrix4fv(glGetUniformLocation(shader_program, "view"), 1, GL_FALSE, (const GLfloat *)matrix_view);
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture);
@@ -172,7 +233,7 @@ int main(void) {
 
 		glBindVertexArray(vao);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_TRIANGLES, sizeof(indices) / 3, GL_UNSIGNED_INT, 0);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
