@@ -48,8 +48,10 @@ int main(void) {
 	mat4 matrix_view;
 
 	mat4 light_model;
-	vec3 light_color;
 	vec3 light_pos;
+	vec3 light_color;
+	vec3 light_ambient_color;
+	vec3 light_diffuse_color;
 
 	GLfloat vertices[] = {
 		-1.0f, -1.0f, -1.0f,	1.0f, 1.0f, 1.0f,	 0.0f,  0.0f, -1.0f,	0.0f, 0.0f, // front face
@@ -103,8 +105,11 @@ int main(void) {
 		22, 21, 23
 	};
 
-	glm_vec3_copy((vec3){1.0f, 1.0f, 1.0f}, light_color);
-	glm_vec3_copy((vec3){0.0f, 3.0f, 0.0f}, light_pos);
+	glm_vec3_copy(GLM_VEC3_ONE, light_color);
+	glm_vec3_scale(light_color, 0.5f, light_diffuse_color);
+	glm_vec3_scale(light_diffuse_color, 0.2f, light_ambient_color);
+
+	glm_vec3_copy((vec3){1.3f, 2.2f, -1.2f}, light_pos);
 
 	glm_mat4_copy(GLM_MAT4_IDENTITY, matrix_model);
 	glm_perspective(glm_rad(45.0f), WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 1000.0f, matrix_projection);
@@ -167,8 +172,13 @@ int main(void) {
 
 	shader_program = shader_create("res/shaders/vert.glsl", "res/shaders/frag.glsl");
 	glUseProgram(shader_program);
-	glUniform1i(glGetUniformLocation(shader_program, "tex01"), 0);
-	glUniform3fv(glGetUniformLocation(shader_program, "light_color"), 1, (const GLfloat *)light_color);
+	// glUniform1i(glGetUniformLocation(shader_program, "tex01"), 0);
+	glUniform3f(glGetUniformLocation(shader_program, "material.ambient_color"), 1.0f, 1.0f, 1.0f);
+	glUniform3f(glGetUniformLocation(shader_program, "material.diffuse_color"), 1.0f, 1.0f, 1.0f);
+	glUniform3f(glGetUniformLocation(shader_program, "material.specular_color"), 0.5f, 0.5f, 0.5f);
+	glUniform1f(glGetUniformLocation(shader_program, "material.shininess"), 32.0f);
+	glUniform3fv(glGetUniformLocation(shader_program, "light.ambient_color"), 1, (const GLfloat *)light_ambient_color);
+	glUniform3fv(glGetUniformLocation(shader_program, "light.diffuse_color"), 1, (const GLfloat *)light_diffuse_color);
 
 	/* setting up texture-related shit */
 	/*
@@ -201,7 +211,6 @@ int main(void) {
 
 	light_shader_program = shader_create("res/shaders/light-vert.glsl", "res/shaders/light-frag.glsl");
 	glUseProgram(light_shader_program);
-	glUniform3fv(glGetUniformLocation(light_shader_program, "light_color"), 1, (const GLfloat *)light_color);
 
 	time_now = glfwGetTime();
 	time_last = time_now;
@@ -275,11 +284,15 @@ int main(void) {
 		glm_vec3_add(cam.pos, cam.dir, cam.tar);
 		glm_lookat(cam.pos, cam.tar, cam.up, matrix_view);
 
-		light_pos[0] = (float)cos(time_elapsed * GLM_PI) * 3.0f;
-		light_pos[2] = (float)sin(time_elapsed * GLM_PI) * 3.0f;
 		glm_mat4_copy(GLM_MAT4_IDENTITY, light_model);
 		glm_translate(light_model, light_pos);
 		glm_scale(light_model, (vec3){0.2f, 0.2f, 0.2f});
+
+		light_color[0] = (float)sin(time_elapsed * 2.0);
+		light_color[1] = (float)sin(time_elapsed * 0.7);
+		light_color[2] = (float)sin(time_elapsed * 1.3);
+		glm_vec3_scale(light_color, 0.5f, light_diffuse_color);
+		glm_vec3_scale(light_diffuse_color, 0.2f, light_ambient_color);
 
 		/* drawing */
 		if(draw_mode)
@@ -295,7 +308,12 @@ int main(void) {
 		glUniformMatrix4fv(glGetUniformLocation(shader_program, "view"), 1, GL_FALSE, (const GLfloat *)matrix_view);
 		glUniformMatrix4fv(glGetUniformLocation(shader_program, "projection"), 1, GL_FALSE, (const GLfloat *)matrix_projection);
 		glUniform3fv(glGetUniformLocation(shader_program, "view_pos"), 1, (const GLfloat *)cam.pos);
-		glUniform3fv(glGetUniformLocation(shader_program, "light_pos"), 1, (const GLfloat *)light_pos);
+
+		glUniform3fv(glGetUniformLocation(shader_program, "light.pos"), 1, (const GLfloat *)light_pos);
+		/* remove these two line to test it */
+		glUniform3fv(glGetUniformLocation(shader_program, "light.ambient_color"), 1, (const GLfloat *)light_ambient_color);
+		glUniform3fv(glGetUniformLocation(shader_program, "light.diffuse_color"), 1, (const GLfloat *)light_diffuse_color);
+		glUniform3f(glGetUniformLocation(shader_program, "light.specular_color"), 1.0f, 1.0f, 1.0f);
 
 		/*
 		glActiveTexture(GL_TEXTURE0);
@@ -310,6 +328,7 @@ int main(void) {
 		glUniformMatrix4fv(glGetUniformLocation(shader_program, "model"), 1, GL_FALSE, (const GLfloat *)light_model);
 		glUniformMatrix4fv(glGetUniformLocation(shader_program, "view"), 1, GL_FALSE, (const GLfloat *)matrix_view);
 		glUniformMatrix4fv(glGetUniformLocation(shader_program, "projection"), 1, GL_FALSE, (const GLfloat *)matrix_projection);
+		glUniform3fv(glGetUniformLocation(light_shader_program, "light_color"), 1, (const GLfloat *)light_color);
 
 		glBindVertexArray(vao_light);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
