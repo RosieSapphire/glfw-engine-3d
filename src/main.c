@@ -25,6 +25,7 @@ int main(void) {
 	GLdouble time_now;
 	GLdouble time_last;
 	GLdouble time_delta;
+	GLdouble time_elapsed = 0.0;
 
 	GLdouble mouse_x, mouse_y;
 
@@ -103,7 +104,7 @@ int main(void) {
 	};
 
 	glm_vec3_copy((vec3){1.0f, 1.0f, 1.0f}, light_color);
-	glm_vec3_copy((vec3){2.9f, 1.6f, 1.4f}, light_pos);
+	glm_vec3_copy((vec3){0.0f, 3.0f, 0.0f}, light_pos);
 
 	glm_mat4_copy(GLM_MAT4_IDENTITY, matrix_model);
 	glm_perspective(glm_rad(45.0f), WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 1000.0f, matrix_projection);
@@ -114,10 +115,6 @@ int main(void) {
 	glm_vec3_copy((vec3){0.0f, 0.0f, -4.0f}, cam.pos);
 	glm_vec3_copy(cam.pos, cam.pos_end);
 	glm_vec2_copy((vec2){90.0f, 0.0f}, cam.rot);
-
-	glm_mat4_copy(GLM_MAT4_IDENTITY, light_model);
-	glm_translate(light_model, light_pos);
-	glm_scale(light_model, (vec3){0.2f, 0.2f, 0.2f});
 
 	if(!glfwInit()) {
 		printf("ERROR: GLFW fucked up.\n");
@@ -172,7 +169,6 @@ int main(void) {
 	glUseProgram(shader_program);
 	glUniform1i(glGetUniformLocation(shader_program, "tex01"), 0);
 	glUniform3fv(glGetUniformLocation(shader_program, "light_color"), 1, (const GLfloat *)light_color);
-	glUniform3fv(glGetUniformLocation(shader_program, "light_pos"), 1, (const GLfloat *)light_pos);
 
 	/* setting up texture-related shit */
 	/*
@@ -222,6 +218,7 @@ int main(void) {
 		time_now = glfwGetTime();
 		time_delta = time_now - time_last;
 		time_last = time_now;
+		time_elapsed += time_delta;
 
 		/* camera look */
 		glfwGetCursorPos(window, &mouse_x, &mouse_y);
@@ -278,6 +275,12 @@ int main(void) {
 		glm_vec3_add(cam.pos, cam.dir, cam.tar);
 		glm_lookat(cam.pos, cam.tar, cam.up, matrix_view);
 
+		light_pos[0] = (float)cos(time_elapsed * GLM_PI) * 3.0f;
+		light_pos[2] = (float)sin(time_elapsed * GLM_PI) * 3.0f;
+		glm_mat4_copy(GLM_MAT4_IDENTITY, light_model);
+		glm_translate(light_model, light_pos);
+		glm_scale(light_model, (vec3){0.2f, 0.2f, 0.2f});
+
 		/* drawing */
 		if(draw_mode)
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -292,6 +295,7 @@ int main(void) {
 		glUniformMatrix4fv(glGetUniformLocation(shader_program, "view"), 1, GL_FALSE, (const GLfloat *)matrix_view);
 		glUniformMatrix4fv(glGetUniformLocation(shader_program, "projection"), 1, GL_FALSE, (const GLfloat *)matrix_projection);
 		glUniform3fv(glGetUniformLocation(shader_program, "view_pos"), 1, (const GLfloat *)cam.pos);
+		glUniform3fv(glGetUniformLocation(shader_program, "light_pos"), 1, (const GLfloat *)light_pos);
 
 		/*
 		glActiveTexture(GL_TEXTURE0);
