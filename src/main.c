@@ -49,8 +49,6 @@ int main(void) {
 	mat4 matrix_projection;
 	mat4 matrix_view;
 
-	mat4 light_model;
-	vec3 light_pos;
 	vec3 light_color;
 	vec3 light_ambient_color;
 	vec3 light_diffuse_color;
@@ -120,10 +118,16 @@ int main(void) {
 		{-1.3f,  1.0f,  -1.5f}
 	};
 
+	vec3 light_point_positions[] = {
+		{ 0.7f,  0.2f,   2.0f},
+		{ 2.3f, -3.3f,  -4.0f},
+		{-4.0f,  2.0f, -12.0f},
+		{ 0.0f,  0.0f,  -3.0f},
+	};
+
 	glm_vec3_copy(GLM_VEC3_ONE, light_color);
 	glm_vec3_scale(light_color, 0.5f, light_diffuse_color);
 	glm_vec3_scale(light_diffuse_color, 0.2f, light_ambient_color);
-	glm_vec3_copy((vec3){1.0f, 1.0f, 1.0f}, light_pos);
 
 	glm_mat4_copy(GLM_MAT4_IDENTITY, matrix_model);
 	glm_perspective(glm_rad(45.0f), WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 1000.0f, matrix_projection);
@@ -189,16 +193,28 @@ int main(void) {
 	glUniform3f(glGetUniformLocation(shader_program, "material.specular_color"), 0.5f, 0.5f, 0.5f);
 	glUniform1f(glGetUniformLocation(shader_program, "material.shininess"), 32.0f);
 
-	glUniform3fv(glGetUniformLocation(shader_program, "light_points[0].ambient_color"), 1, (const GLfloat *)light_ambient_color);
-	glUniform3fv(glGetUniformLocation(shader_program, "light_points[0].diffuse_color"), 1, (const GLfloat *)light_diffuse_color);
-	glUniform1f(glGetUniformLocation(shader_program, "light_points[0].constant"), 1.0f);
-	glUniform1f(glGetUniformLocation(shader_program, "light_points[0].linear"), 0.09f);
-	glUniform1f(glGetUniformLocation(shader_program, "light_points[0].quadratic"), 0.032f);
-
 	glUniform3f(glGetUniformLocation(shader_program, "light_dir.dir"), 0.0f, 0.0f, -1.0f);
 	glUniform3fv(glGetUniformLocation(shader_program, "light_dir.ambient_color"), 1, (const GLfloat *)light_ambient_color);
 	glUniform3fv(glGetUniformLocation(shader_program, "light_dir.diffuse_color"), 1, (const GLfloat *)light_diffuse_color);
 	glUniform3f(glGetUniformLocation(shader_program, "light_dir.specular_color"), 1.0f, 1.0f, 1.0f);
+
+	for(GLuint i = 0; i < 4; i++) {
+		char buffer[128];
+		sprintf(buffer, "light_points[%d].pos", i);
+		glUniform3fv(glGetUniformLocation(shader_program, buffer), 1, (const GLfloat *)light_point_positions[i]);
+		sprintf(buffer, "light_points[%d].ambient_color", i);
+		glUniform3fv(glGetUniformLocation(shader_program, buffer), 1, (const GLfloat *)light_ambient_color);
+		sprintf(buffer, "light_point[%d].diffuse_color", i);
+		glUniform3fv(glGetUniformLocation(shader_program, buffer), 1, (const GLfloat *)light_diffuse_color);
+		sprintf(buffer, "light_points[%d].specular_color", i);
+		glUniform3f(glGetUniformLocation(shader_program, buffer), 1.0f, 1.0f, 1.0f);
+		sprintf(buffer, "light_points[%d].constant", i);
+		glUniform1f(glGetUniformLocation(shader_program, buffer), 1.0f);
+		sprintf(buffer, "light_points[%d].linear", i);
+		glUniform1f(glGetUniformLocation(shader_program, buffer), 0.09f);
+		sprintf(buffer, "light_points[%d].quadratic", i);
+		glUniform1f(glGetUniformLocation(shader_program, buffer), 0.032f);
+	}
 
 	/* loading diffuse texture */
 	glGenTextures(1, &tex_diffuse);
@@ -322,10 +338,6 @@ int main(void) {
 		glm_vec3_add(cam.pos, cam.dir, cam.tar);
 		glm_lookat(cam.pos, cam.tar, cam.up, matrix_view);
 
-		glm_mat4_copy(GLM_MAT4_IDENTITY, light_model);
-		glm_translate(light_model, light_pos);
-		glm_scale(light_model, (vec3){0.2f, 0.2f, 0.2f});
-
 		glm_vec3_scale(light_color, 0.5f, light_diffuse_color);
 		glm_vec3_scale(light_diffuse_color, 0.2f, light_ambient_color);
 
@@ -339,11 +351,6 @@ int main(void) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glUseProgram(shader_program);
-		glUniform3fv(glGetUniformLocation(shader_program, "light_points[0].pos"), 1, (const GLfloat *)light_pos);
-		glUniform3fv(glGetUniformLocation(shader_program, "light_points[0].ambient_color"), 1, (const GLfloat *)light_ambient_color);
-		glUniform3fv(glGetUniformLocation(shader_program, "light_points[0].diffuse_color"), 1, (const GLfloat *)light_diffuse_color);
-		glUniform3f(glGetUniformLocation(shader_program, "light_points[0].specular_color"), 1.0f, 1.0f, 1.0f);
-
 		glUniformMatrix4fv(glGetUniformLocation(shader_program, "model"), 1, GL_FALSE, (const GLfloat *)matrix_model);
 		glUniformMatrix4fv(glGetUniformLocation(shader_program, "view"), 1, GL_FALSE, (const GLfloat *)matrix_view);
 		glUniformMatrix4fv(glGetUniformLocation(shader_program, "projection"), 1, GL_FALSE, (const GLfloat *)matrix_projection);
@@ -368,14 +375,21 @@ int main(void) {
 		}
 
 		glUseProgram(light_shader_program);
-		glUniformMatrix4fv(glGetUniformLocation(shader_program, "model"), 1, GL_FALSE, (const GLfloat *)light_model);
 		glUniformMatrix4fv(glGetUniformLocation(shader_program, "view"), 1, GL_FALSE, (const GLfloat *)matrix_view);
 		glUniformMatrix4fv(glGetUniformLocation(shader_program, "projection"), 1, GL_FALSE, (const GLfloat *)matrix_projection);
 		glUniform3fv(glGetUniformLocation(light_shader_program, "light_color"), 1, (const GLfloat *)light_color);
 
 		glBindVertexArray(vao_light);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-		glDrawElements(GL_TRIANGLES, sizeof(indices) / 3, GL_UNSIGNED_INT, 0);
+
+		for(GLuint i = 0; i < 4; i++) {
+			mat4 light_mat;
+			glm_mat4_copy(GLM_MAT4_IDENTITY, light_mat);
+			glm_translate(light_mat, light_point_positions[i]);
+			glm_scale(light_mat, (vec3){0.2f, 0.2f, 0.2f});
+			glUniformMatrix4fv(glGetUniformLocation(shader_program, "model"), 1, GL_FALSE, (const GLfloat *)light_mat);
+			glDrawElements(GL_TRIANGLES, sizeof(indices) / 3, GL_UNSIGNED_INT, 0);
+		}
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();

@@ -67,8 +67,8 @@ void main() {
 	vec3 view_dir = normalize(view_pos - frag_pos);
 	vec3 final_color = get_light_dir(light_dir, norm, view_dir);
 
-	// for(int i = 0; i < POINT_LIGHT_COUNT; i++)
-		// final_color += get_light_point(light_points[i], norm, frag_pos, view_dir);
+	for(int i = 0; i < POINT_LIGHT_COUNT; i++)
+		final_color += get_light_point(light_points[i], norm, frag_pos, view_dir);
 
 	FragColor = vec4(final_color, 1.0);
 }
