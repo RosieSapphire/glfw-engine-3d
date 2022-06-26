@@ -2,13 +2,12 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include <cglm/cglm.h>
-
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
 #include "file.h"
 #include "shader.h"
+#include "camera.h"
 
 #define WINDOW_WIDTH	800
 #define WINDOW_HEIGHT	800
@@ -29,21 +28,14 @@ int main(void) {
 	GLdouble time_delta;
 
 	GLdouble mouse_x, mouse_y;
-	GLfloat cam_rot_x = 90.0f;
-	GLfloat cam_rot_y = 0.0f;
 
-	vec3 cam_pos;
-	vec3 cam_pos_end;
-	vec3 cam_dir;
-	vec3 cam_tar;
-	vec3 cam_up;
-	vec3 cam_right;
+	camera_t cam;
 
-	GLuint vao;
-	GLuint vbo;
-	GLuint ebo;
+	GLuint vao, vbo, ebo;
+	GLuint vao_light;
 
 	GLuint shader_program;
+	GLuint light_shader_program;
 
 	GLuint texture;
 	GLint texture_width, texture_height, texture_channels;
@@ -57,29 +49,72 @@ int main(void) {
 	mat4 matrix_projection;
 	mat4 matrix_view;
 
+	vec3 model_color;
+	// vec3 light_color;
+
 	GLfloat vertices[] = {
-		-0.5f, -0.5f,  0.5f,	1.0f, 1.0f, 1.0f,	0.0f, 0.0f, // 0 lbf
-		 0.5f, -0.5f,  0.5f,	1.0f, 1.0f, 1.0f,	1.0f, 0.0f, // 1 rbf
-		-0.5f, -0.5f, -0.5f,	1.0f, 1.0f, 1.0f,	0.0f, 0.0f, // 2 lbb
-		 0.5f, -0.5f, -0.5f,	1.0f, 1.0f, 1.0f,	1.0f, 0.0f, // 3 rbb
-		 0.0f,  0.5f,  0.0f,	1.0f, 1.0f, 1.0f,	0.5f, 1.0f, // 4 tip
+		-0.5f, -0.5f, -0.5f,	1.0f, 1.0f, 1.0f,	0.0f, 0.0f, // front face
+		 0.5f, -0.5f, -0.5f,	1.0f, 1.0f, 1.0f,	1.0f, 0.0f,
+		-0.5f,  0.5f, -0.5f,	1.0f, 1.0f, 1.0f,	0.0f, 1.0f,
+		 0.5f,  0.5f, -0.5f,	1.0f, 1.0f, 1.0f,	1.0f, 1.0f,
+
+		-0.5f, -0.5f,  0.5f,	1.0f, 1.0f, 1.0f,	1.0f, 0.0f, // back face
+		 0.5f, -0.5f,  0.5f,	1.0f, 1.0f, 1.0f,	0.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f,	1.0f, 1.0f, 1.0f,	1.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,	1.0f, 1.0f, 1.0f,	0.0f, 1.0f,
+
+		-0.5f, -0.5f,  0.5f,	1.0f, 1.0f, 1.0f,	0.0f, 0.0f, // left face
+		-0.5f, -0.5f, -0.5f,	1.0f, 1.0f, 1.0f,	1.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f,	1.0f, 1.0f, 1.0f,	0.0f, 1.0f,
+		-0.5f,  0.5f, -0.5f,	1.0f, 1.0f, 1.0f,	1.0f, 1.0f,
+
+		 0.5f, -0.5f,  0.5f,	1.0f, 1.0f, 1.0f,	1.0f, 0.0f, // right face
+		 0.5f, -0.5f, -0.5f,	1.0f, 1.0f, 1.0f,	0.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,	1.0f, 1.0f, 1.0f,	1.0f, 1.0f,
+		 0.5f,  0.5f, -0.5f,	1.0f, 1.0f, 1.0f,	0.0f, 1.0f,
+
+		-0.5f,  0.5f, -0.5f,	1.0f, 1.0f, 1.0f,	0.0f, 0.0f, // top face
+		 0.5f,  0.5f, -0.5f,	1.0f, 1.0f, 1.0f,	1.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f,	1.0f, 1.0f, 1.0f,	0.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,	1.0f, 1.0f, 1.0f,	1.0f, 1.0f,
+
+		-0.5f, -0.5f, -0.5f,	1.0f, 1.0f, 1.0f,	0.0f, 0.0f, // bottom face
+		 0.5f, -0.5f, -0.5f,	1.0f, 1.0f, 1.0f,	1.0f, 0.0f,
+		-0.5f, -0.5f,  0.5f,	1.0f, 1.0f, 1.0f,	0.0f, 1.0f,
+		 0.5f, -0.5f,  0.5f,	1.0f, 1.0f, 1.0f,	1.0f, 1.0f,
 	};
 
 	GLuint indices[] = {
-		0, 4, 1,
-		1, 4, 3,
-		3, 4, 2,
-		2, 4, 0,
+		0, 1, 2,
+		2, 1, 3,
+
+		4, 5, 6,
+		6, 5, 7,
+
+		8, 9, 10,
+		10, 9, 11,
+
+		12, 13, 14,
+		14, 13, 15,
+
+		16, 17, 18,
+		18, 17, 19,
+
+		20, 21, 22,
+		22, 21, 23
 	};
+
+	// glm_vec3_copy(
 
 	glm_mat4_copy(GLM_MAT4_IDENTITY, matrix_transform);
 	glm_perspective(glm_rad(45.0f), WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 1000.0f, matrix_projection);
 	glm_mat4_copy(GLM_MAT4_IDENTITY, matrix_view);
 
-	glm_vec3_copy(GLM_YUP, cam_up);
-
-	glm_vec3_copy((vec3){0.0f, 0.0f, -2.0f}, cam_pos);
-	glm_vec3_copy(cam_pos, cam_pos_end);
+	/* camera initialization */
+	glm_vec3_copy(GLM_YUP, cam.up);
+	glm_vec3_copy((vec3){0.0f, 0.0f, -2.0f}, cam.pos);
+	glm_vec3_copy(cam.pos, cam.pos_end);
+	glm_vec2_copy((vec2){90.0f, 0.0f}, cam.rot);
 
 	if(!glfwInit()) {
 		printf("ERROR: GLFW fucked up.\n");
@@ -129,6 +164,9 @@ int main(void) {
 	glEnableVertexAttribArray(2);
 
 	shader_program = shader_create("res/shaders/vert.glsl", "res/shaders/frag.glsl");
+	glUseProgram(shader_program);
+	glUniform1i(glGetUniformLocation(shader_program, "tex01"), 0);
+	glUniform1i(glGetUniformLocation(shader_program, "tex02"), 1);
 
 	/* setting up texture-related shit */
 	glGenTextures(1, &texture);
@@ -138,6 +176,20 @@ int main(void) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+	/* creating the light buffers */
+	glGenVertexArrays(1, &vao_light);
+	glBindVertexArray(vao_light);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), NULL);
+	glEnableVertexAttribArray(0);
+
+	light_shader_program = shader_create("res/shaders/light-vert.glsl", "res/shaders/light-frag.glsl");
+	glUseProgram(light_shader_program);
+	glUniform3fv(glGetUniformLocation(light_shader_program, "model_color"), 1, (const GLfloat *)model_color);
+	// glUniform3f(glGetUniformLocation(light_shader_program, "light_color"), 1);
+
+	/* loading in textures */
 	stbi_set_flip_vertically_on_load(1);
 	texture_data = stbi_load("res/textures/test.png", &texture_width, &texture_height, &texture_channels, 0);
 	if(!texture_data) {
@@ -177,30 +229,30 @@ int main(void) {
 	/* main loop */
 	glfwSetCursorPos(window, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
 	while(!glfwWindowShouldClose(window)) {
+		if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+			glfwSetWindowShouldClose(window, 1);
+
 		time_now = glfwGetTime();
 		time_delta = time_now - time_last;
 		time_last = time_now;
 
-		/* input */
+		/* camera look */
 		glfwGetCursorPos(window, &mouse_x, &mouse_y);
 		mouse_x -= WINDOW_WIDTH / 2;
 		mouse_y -= WINDOW_HEIGHT / 2;
 
-		cam_rot_x += mouse_x * CAM_SENSITIVITY;
-		cam_rot_y -= mouse_y * CAM_SENSITIVITY;
+		cam.rot[0] += mouse_x * CAM_SENSITIVITY;
+		cam.rot[1] -= mouse_y * CAM_SENSITIVITY;
 
-		cam_dir[0] = cos(glm_rad(cam_rot_x)) * cos(glm_rad(cam_rot_y));
-		cam_dir[1] = sin(glm_rad(cam_rot_y));
-		cam_dir[2] = sin(glm_rad(cam_rot_x)) * cos(glm_rad(cam_rot_y));
-		glm_normalize(cam_dir);
+		cam.dir[0] = cos(glm_rad(cam.rot[0])) * cos(glm_rad(cam.rot[1]));
+		cam.dir[1] = sin(glm_rad(cam.rot[1]));
+		cam.dir[2] = sin(glm_rad(cam.rot[0])) * cos(glm_rad(cam.rot[1]));
+		glm_normalize(cam.dir);
 
-		glm_cross(cam_dir, cam_up, cam_right);
-		glm_normalize(cam_right);
+		glm_cross(cam.dir, cam.up, cam.right);
+		glm_normalize(cam.right);
 
 		glfwSetCursorPos(window, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
-
-		if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-			glfwSetWindowShouldClose(window, 1);
 
 		/* toggling wireframe */
 		if(glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS && !first_press) {
@@ -213,31 +265,31 @@ int main(void) {
 
 		{ /* handing camera movement */
 			const float cam_speed = (float)time_delta * CAM_MOVE_SPEED;
-			vec3 cam_forward_vec;
-			vec3 cam_right_vec;
-			glm_vec3_scale(cam_dir, cam_speed, cam_forward_vec);
-			glm_vec3_scale(cam_right, cam_speed, cam_right_vec);
+			vec3 cam_forward_move;
+			vec3 cam_right_move;
+			glm_vec3_scale(cam.dir, cam_speed, cam_forward_move);
+			glm_vec3_scale(cam.right, cam_speed, cam_right_move);
 
 			if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-				glm_vec3_add(cam_pos_end, cam_right_vec, cam_pos_end);
+				glm_vec3_add(cam.pos_end, cam_right_move, cam.pos_end);
 
 			if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-				glm_vec3_sub(cam_pos_end, cam_right_vec, cam_pos_end);
+				glm_vec3_sub(cam.pos_end, cam_right_move, cam.pos_end);
 
 			if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-				glm_vec3_add(cam_pos_end, cam_forward_vec, cam_pos_end);
+				glm_vec3_add(cam.pos_end, cam_forward_move, cam.pos_end);
 
 			if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-				glm_vec3_sub(cam_pos_end, cam_forward_vec, cam_pos_end);
+				glm_vec3_sub(cam.pos_end, cam_forward_move, cam.pos_end);
 		}
 
-		glm_vec3_lerp(cam_pos, cam_pos_end, (float)time_delta * CAM_LERP_SPEED, cam_pos);
+		glm_vec3_lerp(cam.pos, cam.pos_end, (float)time_delta * CAM_LERP_SPEED, cam.pos);
 
 		glm_mat4_copy(GLM_MAT4_IDENTITY, matrix_transform);
 		glm_mat4_copy(GLM_MAT4_IDENTITY, matrix_view);
 
-		glm_vec3_add(cam_pos, cam_dir, cam_tar);
-		glm_lookat(cam_pos, cam_tar, cam_up, matrix_view);
+		glm_vec3_add(cam.pos, cam.dir, cam.tar);
+		glm_lookat(cam.pos, cam.tar, cam.up, matrix_view);
 
 		/* drawing */
 		if(draw_mode)
@@ -249,8 +301,6 @@ int main(void) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glUseProgram(shader_program);
-		glUniform1i(glGetUniformLocation(shader_program, "tex01"), 0);
-		glUniform1i(glGetUniformLocation(shader_program, "tex02"), 1);
 		glUniform1f(glGetUniformLocation(shader_program, "lerp"), (float)((sin(time_now * 3.14159) + 1) / 2));
 		glUniformMatrix4fv(glGetUniformLocation(shader_program, "transform"), 1, GL_FALSE, (const GLfloat *)matrix_transform);
 		glUniformMatrix4fv(glGetUniformLocation(shader_program, "projection"), 1, GL_FALSE, (const GLfloat *)matrix_projection);
@@ -270,6 +320,7 @@ int main(void) {
 	}
 
 	glDeleteShader(shader_program);
+	glDeleteShader(light_shader_program);
 	glfwTerminate();
 
 	return 0;
