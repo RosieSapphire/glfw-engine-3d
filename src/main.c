@@ -56,35 +56,35 @@ int main(void) {
 	vec3 light_diffuse_color;
 
 	GLfloat vertices[] = {
-		-1.0f, -1.0f, -1.0f,	 0.0f,  0.0f, -1.0f,	0.0f, 0.0f, // front face
-		 1.0f, -1.0f, -1.0f,	 0.0f,  0.0f, -1.0f,	1.0f, 0.0f,
-		-1.0f,  1.0f, -1.0f,	 0.0f,  0.0f, -1.0f,	0.0f, 1.0f,
-		 1.0f,  1.0f, -1.0f,	 0.0f,  0.0f, -1.0f,	1.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,	 0.0f,  0.0f, -1.0f,	0.0f, 0.0f, // front face
+		 0.5f, -0.5f, -0.5f,	 0.0f,  0.0f, -1.0f,	1.0f, 0.0f,
+		-0.5f,  0.5f, -0.5f,	 0.0f,  0.0f, -1.0f,	0.0f, 1.0f,
+		 0.5f,  0.5f, -0.5f,	 0.0f,  0.0f, -1.0f,	1.0f, 1.0f,
 
-		-1.0f, -1.0f,  1.0f,	 0.0f,  0.0f,  1.0f,	1.0f, 0.0f, // back face
-		 1.0f, -1.0f,  1.0f,	 0.0f,  0.0f,  1.0f,	0.0f, 0.0f,
-		-1.0f,  1.0f,  1.0f,	 0.0f,  0.0f,  1.0f,	1.0f, 1.0f,
-		 1.0f,  1.0f,  1.0f,	 0.0f,  0.0f,  1.0f,	0.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f,	 0.0f,  0.0f,  1.0f,	1.0f, 0.0f, // back face
+		 0.5f, -0.5f,  0.5f,	 0.0f,  0.0f,  1.0f,	0.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f,	 0.0f,  0.0f,  1.0f,	1.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,	 0.0f,  0.0f,  1.0f,	0.0f, 1.0f,
 
-		-1.0f, -1.0f,  1.0f,	-1.0f,  0.0f,  0.0f,	0.0f, 0.0f, // left face
-		-1.0f, -1.0f, -1.0f,	-1.0f,  0.0f,  0.0f,	1.0f, 0.0f,
-		-1.0f,  1.0f,  1.0f,	-1.0f,  0.0f,  0.0f,	0.0f, 1.0f,
-		-1.0f,  1.0f, -1.0f,	-1.0f,  0.0f,  0.0f,	1.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f,	-1.0f,  0.0f,  0.0f,	0.0f, 0.0f, // left face
+		-0.5f, -0.5f, -0.5f,	-1.0f,  0.0f,  0.0f,	1.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f,	-1.0f,  0.0f,  0.0f,	0.0f, 1.0f,
+		-0.5f,  0.5f, -0.5f,	-1.0f,  0.0f,  0.0f,	1.0f, 1.0f,
 
-		 1.0f, -1.0f,  1.0f,	 1.0f,  0.0f,  0.0f,	1.0f, 0.0f, // right face
-		 1.0f, -1.0f, -1.0f,	 1.0f,  0.0f,  0.0f,	0.0f, 0.0f,
-		 1.0f,  1.0f,  1.0f,	 1.0f,  0.0f,  0.0f,	1.0f, 1.0f,
-		 1.0f,  1.0f, -1.0f,	 1.0f,  0.0f,  0.0f,	0.0f, 1.0f,
+		 0.5f, -0.5f,  0.5f,	 1.0f,  0.0f,  0.0f,	1.0f, 0.0f, // right face
+		 0.5f, -0.5f, -0.5f,	 1.0f,  0.0f,  0.0f,	0.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,	 1.0f,  0.0f,  0.0f,	1.0f, 1.0f,
+		 0.5f,  0.5f, -0.5f,	 1.0f,  0.0f,  0.0f,	0.0f, 1.0f,
 
-		-1.0f,  1.0f, -1.0f,	 0.0f,  1.0f,  0.0f,	0.0f, 0.0f, // top face
-		 1.0f,  1.0f, -1.0f,	 0.0f,  1.0f,  0.0f,	1.0f, 0.0f,
-		-1.0f,  1.0f,  1.0f,	 0.0f,  1.0f,  0.0f,	0.0f, 1.0f,
-		 1.0f,  1.0f,  1.0f,	 0.0f,  1.0f,  0.0f,	1.0f, 1.0f,
+		-0.5f,  0.5f, -0.5f,	 0.0f,  1.0f,  0.0f,	0.0f, 0.0f, // top face
+		 0.5f,  0.5f, -0.5f,	 0.0f,  1.0f,  0.0f,	1.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f,	 0.0f,  1.0f,  0.0f,	0.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,	 0.0f,  1.0f,  0.0f,	1.0f, 1.0f,
 
-		-1.0f, -1.0f, -1.0f,	 0.0f, -1.0f,  0.0f,	0.0f, 0.0f, // bottom face
-		 1.0f, -1.0f, -1.0f,	 0.0f, -1.0f,  0.0f,	1.0f, 0.0f,
-		-1.0f, -1.0f,  1.0f,	 0.0f, -1.0f,  0.0f,	0.0f, 1.0f,
-		 1.0f, -1.0f,  1.0f,	 0.0f, -1.0f,  0.0f,	1.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,	 0.0f, -1.0f,  0.0f,	0.0f, 0.0f, // bottom face
+		 0.5f, -0.5f, -0.5f,	 0.0f, -1.0f,  0.0f,	1.0f, 0.0f,
+		-0.5f, -0.5f,  0.5f,	 0.0f, -1.0f,  0.0f,	0.0f, 1.0f,
+		 0.5f, -0.5f,  0.5f,	 0.0f, -1.0f,  0.0f,	1.0f, 1.0f,
 	};
 
 	GLuint indices[] = {
@@ -107,10 +107,23 @@ int main(void) {
 		22, 21, 23
 	};
 
+	vec3 cube_positions[] = {
+		{ 0.0f,  0.0f,   0.0f},
+		{ 2.0f,  5.0f, -15.0f},
+		{-1.5f, -2.2f,  -2.5f},
+		{-3.8f, -2.0f, -12.3f},
+		{ 2.4f, -0.4f,  -3.5f},
+		{-1.7f,  3.0f,  -7.5f},
+		{ 1.3f, -2.0f,  -2.5f},
+		{ 1.5f,  2.0f,  -2.5f},
+		{ 1.5f,  0.2f,  -1.5f},
+		{-1.3f,  1.0f,  -1.5f}
+	};
+
 	glm_vec3_copy(GLM_VEC3_ONE, light_color);
 	glm_vec3_scale(light_color, 0.5f, light_diffuse_color);
 	glm_vec3_scale(light_diffuse_color, 0.2f, light_ambient_color);
-	glm_vec3_copy((vec3){1.7f, 1.6f, -3.0f}, light_pos);
+	glm_vec3_copy((vec3){1.0f, 1.0f, 1.0f}, light_pos);
 
 	glm_mat4_copy(GLM_MAT4_IDENTITY, matrix_model);
 	glm_perspective(glm_rad(45.0f), WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 1000.0f, matrix_projection);
@@ -175,8 +188,17 @@ int main(void) {
 	glUniform1i(glGetUniformLocation(shader_program, "material.specular_tex"), 1);
 	glUniform3f(glGetUniformLocation(shader_program, "material.specular_color"), 0.5f, 0.5f, 0.5f);
 	glUniform1f(glGetUniformLocation(shader_program, "material.shininess"), 32.0f);
-	glUniform3fv(glGetUniformLocation(shader_program, "light.ambient_color"), 1, (const GLfloat *)light_ambient_color);
-	glUniform3fv(glGetUniformLocation(shader_program, "light.diffuse_color"), 1, (const GLfloat *)light_diffuse_color);
+
+	glUniform3fv(glGetUniformLocation(shader_program, "light_points[0].ambient_color"), 1, (const GLfloat *)light_ambient_color);
+	glUniform3fv(glGetUniformLocation(shader_program, "light_points[0].diffuse_color"), 1, (const GLfloat *)light_diffuse_color);
+	glUniform1f(glGetUniformLocation(shader_program, "light_points[0].constant"), 1.0f);
+	glUniform1f(glGetUniformLocation(shader_program, "light_points[0].linear"), 0.09f);
+	glUniform1f(glGetUniformLocation(shader_program, "light_points[0].quadratic"), 0.032f);
+
+	glUniform3f(glGetUniformLocation(shader_program, "light_dir.dir"), 0.0f, 0.0f, -1.0f);
+	glUniform3fv(glGetUniformLocation(shader_program, "light_dir.ambient_color"), 1, (const GLfloat *)light_ambient_color);
+	glUniform3fv(glGetUniformLocation(shader_program, "light_dir.diffuse_color"), 1, (const GLfloat *)light_diffuse_color);
+	glUniform3f(glGetUniformLocation(shader_program, "light_dir.specular_color"), 1.0f, 1.0f, 1.0f);
 
 	/* loading diffuse texture */
 	glGenTextures(1, &tex_diffuse);
@@ -313,19 +335,19 @@ int main(void) {
 		else
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		glClearColor(0.2f, 0.1f, 0.6f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glUseProgram(shader_program);
+		glUniform3fv(glGetUniformLocation(shader_program, "light_points[0].pos"), 1, (const GLfloat *)light_pos);
+		glUniform3fv(glGetUniformLocation(shader_program, "light_points[0].ambient_color"), 1, (const GLfloat *)light_ambient_color);
+		glUniform3fv(glGetUniformLocation(shader_program, "light_points[0].diffuse_color"), 1, (const GLfloat *)light_diffuse_color);
+		glUniform3f(glGetUniformLocation(shader_program, "light_points[0].specular_color"), 1.0f, 1.0f, 1.0f);
+
 		glUniformMatrix4fv(glGetUniformLocation(shader_program, "model"), 1, GL_FALSE, (const GLfloat *)matrix_model);
 		glUniformMatrix4fv(glGetUniformLocation(shader_program, "view"), 1, GL_FALSE, (const GLfloat *)matrix_view);
 		glUniformMatrix4fv(glGetUniformLocation(shader_program, "projection"), 1, GL_FALSE, (const GLfloat *)matrix_projection);
 		glUniform3fv(glGetUniformLocation(shader_program, "view_pos"), 1, (const GLfloat *)cam.pos);
-
-		glUniform3fv(glGetUniformLocation(shader_program, "light.pos"), 1, (const GLfloat *)light_pos);
-		glUniform3fv(glGetUniformLocation(shader_program, "light.ambient_color"), 1, (const GLfloat *)light_ambient_color);
-		glUniform3fv(glGetUniformLocation(shader_program, "light.diffuse_color"), 1, (const GLfloat *)light_diffuse_color);
-		glUniform3f(glGetUniformLocation(shader_program, "light.specular_color"), 1.0f, 1.0f, 1.0f);
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, tex_diffuse);
@@ -334,7 +356,16 @@ int main(void) {
 
 		glBindVertexArray(vao);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-		glDrawElements(GL_TRIANGLES, sizeof(indices) / 3, GL_UNSIGNED_INT, 0);
+
+		for(GLuint i = 0; i < 10; i++) {
+			mat4 model_mat;
+			float angle = 20 * i + (time_elapsed * GLM_PI * 12);
+			glm_mat4_copy(GLM_MAT4_IDENTITY, model_mat);
+			glm_translate(model_mat, cube_positions[i]);
+			glm_rotate(model_mat, glm_rad(angle), (vec3){1.0f, 0.3f, 0.5f});
+			glUniformMatrix4fv(glGetUniformLocation(shader_program, "model"), 1, GL_FALSE, (const GLfloat *)model_mat);
+			glDrawElements(GL_TRIANGLES, sizeof(indices) / 3, GL_UNSIGNED_INT, 0);
+		}
 
 		glUseProgram(light_shader_program);
 		glUniformMatrix4fv(glGetUniformLocation(shader_program, "model"), 1, GL_FALSE, (const GLfloat *)light_model);
