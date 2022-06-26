@@ -37,9 +37,13 @@ int main(void) {
 	GLuint shader_program;
 	GLuint light_shader_program;
 
-	GLuint texture;
-	GLint texture_width, texture_height, texture_channels;
-	GLubyte *texture_data;
+	GLuint tex_diffuse;
+	GLint tex_diffuse_width, tex_diffuse_height, tex_diffuse_channels;
+	GLubyte *tex_diffuse_data;
+
+	GLuint tex_specular;
+	GLint tex_specular_width, tex_specular_height, tex_specular_channels;
+	GLubyte *tex_specular_data;
 
 	mat4 matrix_model;
 	mat4 matrix_projection;
@@ -106,8 +110,7 @@ int main(void) {
 	glm_vec3_copy(GLM_VEC3_ONE, light_color);
 	glm_vec3_scale(light_color, 0.5f, light_diffuse_color);
 	glm_vec3_scale(light_diffuse_color, 0.2f, light_ambient_color);
-
-	glm_vec3_copy((vec3){2.3f, 2.1f, -2.0f}, light_pos);
+	glm_vec3_copy((vec3){1.7f, 1.6f, -3.0f}, light_pos);
 
 	glm_mat4_copy(GLM_MAT4_IDENTITY, matrix_model);
 	glm_perspective(glm_rad(45.0f), WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 1000.0f, matrix_projection);
@@ -169,30 +172,51 @@ int main(void) {
 	shader_program = shader_create("res/shaders/vert.glsl", "res/shaders/frag.glsl");
 	glUseProgram(shader_program);
 	glUniform1i(glGetUniformLocation(shader_program, "material.diffuse_tex"), 0);
+	glUniform1i(glGetUniformLocation(shader_program, "material.specular_tex"), 1);
 	glUniform3f(glGetUniformLocation(shader_program, "material.specular_color"), 0.5f, 0.5f, 0.5f);
 	glUniform1f(glGetUniformLocation(shader_program, "material.shininess"), 32.0f);
 	glUniform3fv(glGetUniformLocation(shader_program, "light.ambient_color"), 1, (const GLfloat *)light_ambient_color);
 	glUniform3fv(glGetUniformLocation(shader_program, "light.diffuse_color"), 1, (const GLfloat *)light_diffuse_color);
 
-	/* setting up texture-related shit */
-	glGenTextures(1, &texture);
-	glBindTexture(GL_TEXTURE_2D, texture);
+	/* loading diffuse texture */
+	glGenTextures(1, &tex_diffuse);
+	glBindTexture(GL_TEXTURE_2D, tex_diffuse);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	stbi_set_flip_vertically_on_load(1);
-	texture_data = stbi_load("res/textures/test.png", &texture_width, &texture_height, &texture_channels, 0);
-	if(!texture_data) {
-		printf("ERROR: Texture fucked up.\n");
+	tex_diffuse_data = stbi_load("res/textures/box-diffuse.png", &tex_diffuse_width, &tex_diffuse_height, &tex_diffuse_channels, 0);
+	if(!tex_diffuse_data) {
+		printf("ERROR: Diffuse texture fucked up.\n");
 		glfwTerminate();
 		return 1;
 	}
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture_width, texture_height, 0, GL_RGB, GL_UNSIGNED_BYTE, texture_data);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_diffuse_width, tex_diffuse_height, 0, GL_RGB, GL_UNSIGNED_BYTE, tex_diffuse_data);
 	glGenerateMipmap(GL_TEXTURE_2D);
-	stbi_image_free(texture_data);
+	stbi_image_free(tex_diffuse_data);
+
+	/* loading specular texture */
+	glGenTextures(1, &tex_specular);
+	glBindTexture(GL_TEXTURE_2D, tex_specular);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	stbi_set_flip_vertically_on_load(1);
+	tex_specular_data = stbi_load("res/textures/box-specular.png", &tex_specular_width, &tex_specular_height, &tex_specular_channels, 0);
+	if(!tex_specular_data) {
+		printf("ERROR: Specular texture fucked up.\n");
+		glfwTerminate();
+		return 1;
+	}
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, tex_specular_width, tex_specular_height, 0, GL_RED, GL_UNSIGNED_BYTE, tex_specular_data);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	stbi_image_free(tex_specular_data);
 
 	/* creating the light buffers */
 	glGenVertexArrays(1, &vao_light);
@@ -304,7 +328,9 @@ int main(void) {
 		glUniform3f(glGetUniformLocation(shader_program, "light.specular_color"), 1.0f, 1.0f, 1.0f);
 
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, texture);
+		glBindTexture(GL_TEXTURE_2D, tex_diffuse);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, tex_specular);
 
 		glBindVertexArray(vao);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
