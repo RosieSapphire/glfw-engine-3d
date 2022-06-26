@@ -25,7 +25,7 @@ GLuint shader_create(const char *vert_path, const char *frag_path) {
 			glGetShaderInfoLog(vertex_shader, 512, NULL, info_log);
 			printf("ERROR: Vertex shader fucked up: %s\n", info_log);
 			glfwTerminate();
-			return 1;
+			return 0;
 		}
 	}
 
@@ -43,7 +43,7 @@ GLuint shader_create(const char *vert_path, const char *frag_path) {
 			glGetShaderInfoLog(fragment_shader, 512, NULL, info_log);
 			printf("ERROR: Fragment shader fucked up: %s\n", info_log);
 			glfwTerminate();
-			return 1;
+			return 0;
 		}
 	}
 
@@ -61,7 +61,7 @@ GLuint shader_create(const char *vert_path, const char *frag_path) {
 			glGetProgramInfoLog(shader_program, 512, NULL, info_log);
 			printf("ERROR: Shader program fucked up: %s\n", info_log);
 			glfwTerminate();
-			return 1;
+			return 0;
 		}
 	}
 
