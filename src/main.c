@@ -37,11 +37,9 @@ int main(void) {
 	GLuint shader_program;
 	GLuint light_shader_program;
 
-	/*
 	GLuint texture;
 	GLint texture_width, texture_height, texture_channels;
 	GLubyte *texture_data;
-	*/
 
 	mat4 matrix_model;
 	mat4 matrix_projection;
@@ -54,35 +52,35 @@ int main(void) {
 	vec3 light_diffuse_color;
 
 	GLfloat vertices[] = {
-		-1.0f, -1.0f, -1.0f,	1.0f, 1.0f, 1.0f,	 0.0f,  0.0f, -1.0f,	0.0f, 0.0f, // front face
-		 1.0f, -1.0f, -1.0f,	1.0f, 1.0f, 1.0f,	 0.0f,  0.0f, -1.0f,	1.0f, 0.0f,
-		-1.0f,  1.0f, -1.0f,	1.0f, 1.0f, 1.0f,	 0.0f,  0.0f, -1.0f,	0.0f, 1.0f,
-		 1.0f,  1.0f, -1.0f,	1.0f, 1.0f, 1.0f,	 0.0f,  0.0f, -1.0f,	1.0f, 1.0f,
+		-1.0f, -1.0f, -1.0f,	 0.0f,  0.0f, -1.0f,	0.0f, 0.0f, // front face
+		 1.0f, -1.0f, -1.0f,	 0.0f,  0.0f, -1.0f,	1.0f, 0.0f,
+		-1.0f,  1.0f, -1.0f,	 0.0f,  0.0f, -1.0f,	0.0f, 1.0f,
+		 1.0f,  1.0f, -1.0f,	 0.0f,  0.0f, -1.0f,	1.0f, 1.0f,
 
-		-1.0f, -1.0f,  1.0f,	1.0f, 1.0f, 1.0f,	 0.0f,  0.0f,  1.0f,	1.0f, 0.0f, // back face
-		 1.0f, -1.0f,  1.0f,	1.0f, 1.0f, 1.0f,	 0.0f,  0.0f,  1.0f,	0.0f, 0.0f,
-		-1.0f,  1.0f,  1.0f,	1.0f, 1.0f, 1.0f,	 0.0f,  0.0f,  1.0f,	1.0f, 1.0f,
-		 1.0f,  1.0f,  1.0f,	1.0f, 1.0f, 1.0f,	 0.0f,  0.0f,  1.0f,	0.0f, 1.0f,
+		-1.0f, -1.0f,  1.0f,	 0.0f,  0.0f,  1.0f,	1.0f, 0.0f, // back face
+		 1.0f, -1.0f,  1.0f,	 0.0f,  0.0f,  1.0f,	0.0f, 0.0f,
+		-1.0f,  1.0f,  1.0f,	 0.0f,  0.0f,  1.0f,	1.0f, 1.0f,
+		 1.0f,  1.0f,  1.0f,	 0.0f,  0.0f,  1.0f,	0.0f, 1.0f,
 
-		-1.0f, -1.0f,  1.0f,	1.0f, 1.0f, 1.0f,	-1.0f,  0.0f,  0.0f,	0.0f, 0.0f, // left face
-		-1.0f, -1.0f, -1.0f,	1.0f, 1.0f, 1.0f,	-1.0f,  0.0f,  0.0f,	1.0f, 0.0f,
-		-1.0f,  1.0f,  1.0f,	1.0f, 1.0f, 1.0f,	-1.0f,  0.0f,  0.0f,	0.0f, 1.0f,
-		-1.0f,  1.0f, -1.0f,	1.0f, 1.0f, 1.0f,	-1.0f,  0.0f,  0.0f,	1.0f, 1.0f,
+		-1.0f, -1.0f,  1.0f,	-1.0f,  0.0f,  0.0f,	0.0f, 0.0f, // left face
+		-1.0f, -1.0f, -1.0f,	-1.0f,  0.0f,  0.0f,	1.0f, 0.0f,
+		-1.0f,  1.0f,  1.0f,	-1.0f,  0.0f,  0.0f,	0.0f, 1.0f,
+		-1.0f,  1.0f, -1.0f,	-1.0f,  0.0f,  0.0f,	1.0f, 1.0f,
 
-		 1.0f, -1.0f,  1.0f,	1.0f, 1.0f, 1.0f,	 1.0f,  0.0f,  0.0f,	1.0f, 0.0f, // right face
-		 1.0f, -1.0f, -1.0f,	1.0f, 1.0f, 1.0f,	 1.0f,  0.0f,  0.0f,	0.0f, 0.0f,
-		 1.0f,  1.0f,  1.0f,	1.0f, 1.0f, 1.0f,	 1.0f,  0.0f,  0.0f,	1.0f, 1.0f,
-		 1.0f,  1.0f, -1.0f,	1.0f, 1.0f, 1.0f,	 1.0f,  0.0f,  0.0f,	0.0f, 1.0f,
+		 1.0f, -1.0f,  1.0f,	 1.0f,  0.0f,  0.0f,	1.0f, 0.0f, // right face
+		 1.0f, -1.0f, -1.0f,	 1.0f,  0.0f,  0.0f,	0.0f, 0.0f,
+		 1.0f,  1.0f,  1.0f,	 1.0f,  0.0f,  0.0f,	1.0f, 1.0f,
+		 1.0f,  1.0f, -1.0f,	 1.0f,  0.0f,  0.0f,	0.0f, 1.0f,
 
-		-1.0f,  1.0f, -1.0f,	1.0f, 1.0f, 1.0f,	 0.0f,  1.0f,  0.0f,	0.0f, 0.0f, // top face
-		 1.0f,  1.0f, -1.0f,	1.0f, 1.0f, 1.0f,	 0.0f,  1.0f,  0.0f,	1.0f, 0.0f,
-		-1.0f,  1.0f,  1.0f,	1.0f, 1.0f, 1.0f,	 0.0f,  1.0f,  0.0f,	0.0f, 1.0f,
-		 1.0f,  1.0f,  1.0f,	1.0f, 1.0f, 1.0f,	 0.0f,  1.0f,  0.0f,	1.0f, 1.0f,
+		-1.0f,  1.0f, -1.0f,	 0.0f,  1.0f,  0.0f,	0.0f, 0.0f, // top face
+		 1.0f,  1.0f, -1.0f,	 0.0f,  1.0f,  0.0f,	1.0f, 0.0f,
+		-1.0f,  1.0f,  1.0f,	 0.0f,  1.0f,  0.0f,	0.0f, 1.0f,
+		 1.0f,  1.0f,  1.0f,	 0.0f,  1.0f,  0.0f,	1.0f, 1.0f,
 
-		-1.0f, -1.0f, -1.0f,	1.0f, 1.0f, 1.0f,	 0.0f, -1.0f,  0.0f,	0.0f, 0.0f, // bottom face
-		 1.0f, -1.0f, -1.0f,	1.0f, 1.0f, 1.0f,	 0.0f, -1.0f,  0.0f,	1.0f, 0.0f,
-		-1.0f, -1.0f,  1.0f,	1.0f, 1.0f, 1.0f,	 0.0f, -1.0f,  0.0f,	0.0f, 1.0f,
-		 1.0f, -1.0f,  1.0f,	1.0f, 1.0f, 1.0f,	 0.0f, -1.0f,  0.0f,	1.0f, 1.0f,
+		-1.0f, -1.0f, -1.0f,	 0.0f, -1.0f,  0.0f,	0.0f, 0.0f, // bottom face
+		 1.0f, -1.0f, -1.0f,	 0.0f, -1.0f,  0.0f,	1.0f, 0.0f,
+		-1.0f, -1.0f,  1.0f,	 0.0f, -1.0f,  0.0f,	0.0f, 1.0f,
+		 1.0f, -1.0f,  1.0f,	 0.0f, -1.0f,  0.0f,	1.0f, 1.0f,
 	};
 
 	GLuint indices[] = {
@@ -109,7 +107,7 @@ int main(void) {
 	glm_vec3_scale(light_color, 0.5f, light_diffuse_color);
 	glm_vec3_scale(light_diffuse_color, 0.2f, light_ambient_color);
 
-	glm_vec3_copy((vec3){1.3f, 2.2f, -1.2f}, light_pos);
+	glm_vec3_copy((vec3){2.3f, 2.1f, -2.0f}, light_pos);
 
 	glm_mat4_copy(GLM_MAT4_IDENTITY, matrix_model);
 	glm_perspective(glm_rad(45.0f), WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 1000.0f, matrix_projection);
@@ -161,27 +159,22 @@ int main(void) {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(GLfloat), NULL);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(GLfloat), (GLvoid *)(3 * sizeof(GLfloat)));
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(GLfloat), (GLvoid *)(6 * sizeof(GLfloat)));
-	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 11 * sizeof(GLfloat), (GLvoid *)(9 * sizeof(GLfloat)));
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), NULL);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid *)(3 * sizeof(GLfloat)));
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid *)(6 * sizeof(GLfloat)));
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
 	glEnableVertexAttribArray(2);
-	glEnableVertexAttribArray(3);
 
 	shader_program = shader_create("res/shaders/vert.glsl", "res/shaders/frag.glsl");
 	glUseProgram(shader_program);
-	// glUniform1i(glGetUniformLocation(shader_program, "tex01"), 0);
-	glUniform3f(glGetUniformLocation(shader_program, "material.ambient_color"), 1.0f, 1.0f, 1.0f);
-	glUniform3f(glGetUniformLocation(shader_program, "material.diffuse_color"), 1.0f, 1.0f, 1.0f);
+	glUniform1i(glGetUniformLocation(shader_program, "material.diffuse_tex"), 0);
 	glUniform3f(glGetUniformLocation(shader_program, "material.specular_color"), 0.5f, 0.5f, 0.5f);
 	glUniform1f(glGetUniformLocation(shader_program, "material.shininess"), 32.0f);
 	glUniform3fv(glGetUniformLocation(shader_program, "light.ambient_color"), 1, (const GLfloat *)light_ambient_color);
 	glUniform3fv(glGetUniformLocation(shader_program, "light.diffuse_color"), 1, (const GLfloat *)light_diffuse_color);
 
 	/* setting up texture-related shit */
-	/*
 	glGenTextures(1, &texture);
 	glBindTexture(GL_TEXTURE_2D, texture);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -200,13 +193,12 @@ int main(void) {
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture_width, texture_height, 0, GL_RGB, GL_UNSIGNED_BYTE, texture_data);
 	glGenerateMipmap(GL_TEXTURE_2D);
 	stbi_image_free(texture_data);
-	*/
 
 	/* creating the light buffers */
 	glGenVertexArrays(1, &vao_light);
 	glBindVertexArray(vao_light);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(GLfloat), NULL);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), NULL);
 	glEnableVertexAttribArray(0);
 
 	light_shader_program = shader_create("res/shaders/light-vert.glsl", "res/shaders/light-frag.glsl");
@@ -288,9 +280,6 @@ int main(void) {
 		glm_translate(light_model, light_pos);
 		glm_scale(light_model, (vec3){0.2f, 0.2f, 0.2f});
 
-		light_color[0] = (float)sin(time_elapsed * 2.0);
-		light_color[1] = (float)sin(time_elapsed * 0.7);
-		light_color[2] = (float)sin(time_elapsed * 1.3);
 		glm_vec3_scale(light_color, 0.5f, light_diffuse_color);
 		glm_vec3_scale(light_diffuse_color, 0.2f, light_ambient_color);
 
@@ -310,15 +299,12 @@ int main(void) {
 		glUniform3fv(glGetUniformLocation(shader_program, "view_pos"), 1, (const GLfloat *)cam.pos);
 
 		glUniform3fv(glGetUniformLocation(shader_program, "light.pos"), 1, (const GLfloat *)light_pos);
-		/* remove these two line to test it */
 		glUniform3fv(glGetUniformLocation(shader_program, "light.ambient_color"), 1, (const GLfloat *)light_ambient_color);
 		glUniform3fv(glGetUniformLocation(shader_program, "light.diffuse_color"), 1, (const GLfloat *)light_diffuse_color);
 		glUniform3f(glGetUniformLocation(shader_program, "light.specular_color"), 1.0f, 1.0f, 1.0f);
 
-		/*
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture);
-		*/
 
 		glBindVertexArray(vao);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
