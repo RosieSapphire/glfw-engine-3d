@@ -153,8 +153,6 @@ int main(void) {
 	/* loading shaders */
 	shader_program = shader_create("res/shaders/vert.glsl", "res/shaders/frag.glsl");
 	glUseProgram(shader_program);
-	glUniform1i(glGetUniformLocation(shader_program, "material.diffuse_tex"), 0);
-	glUniform1i(glGetUniformLocation(shader_program, "material.specular_tex"), 1);
 	glUniform3f(glGetUniformLocation(shader_program, "material.specular_color"), 0.5f, 0.5f, 0.5f);
 	glUniform1f(glGetUniformLocation(shader_program, "material.shininess"), 32.0f);
 
@@ -286,7 +284,7 @@ int main(void) {
 			glm_translate(model_mat, cube_positions[i]);
 			glm_rotate(model_mat, glm_rad(angle), (vec3){1.0f, 0.3f, 0.5f});
 			glUniformMatrix4fv(glGetUniformLocation(shader_program, "model"), 1, GL_FALSE, (const GLfloat *)model_mat);
-			mesh_draw(mesh_cube);
+			mesh_draw(mesh_cube, shader_program);
 		}
 
 		glUseProgram(light_shader_program);
@@ -299,7 +297,7 @@ int main(void) {
 			glm_translate(light_mat, light_point_positions[i]);
 			glm_scale(light_mat, (vec3){0.2f, 0.2f, 0.2f});
 			glUniformMatrix4fv(glGetUniformLocation(light_shader_program, "model"), 1, GL_FALSE, (const GLfloat *)light_mat);
-			mesh_draw(mesh_light);
+			mesh_draw(mesh_light, light_shader_program);
 		}
 
 		glfwSwapBuffers(window);

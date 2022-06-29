@@ -1,6 +1,7 @@
 #include "mesh.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 mesh_t mesh_create(vertex_t *vertices, GLuint *indices, texture_t *textures, const GLuint vertex_count, const GLuint index_count, const GLuint texture_count) {
 	GLuint i;
@@ -49,13 +50,39 @@ mesh_t mesh_create(vertex_t *vertices, GLuint *indices, texture_t *textures, con
 	return m;
 }
 
-void mesh_draw(mesh_t m) {
-	/* GLuint diffuse_count;
-	GLuint specular_count; */
+void mesh_draw(mesh_t m, GLuint s) {
+	GLuint diffuse_count = 0;
+	GLuint specular_count = 0;
 	GLuint i;
 
 	for(i = 0; i < m.texture_count; i++) {
+		const char *name;
+		char uniform[32];
+		char num[2];
+		memset(uniform, 0, sizeof(uniform));
+		memset(num, 0, sizeof(num));
 		glActiveTexture(GL_TEXTURE0 + i);
+
+		switch(m.textures[i].type) {
+			case TT_DIFFUSE:
+				name = "tex_diffuse";
+				*num = 48 + diffuse_count++;
+				break;
+
+			case TT_SPECULAR:
+				name = "tex_specular";
+				*num = 48 + specular_count++;
+				break;
+
+			default:
+				name = "unknown";
+				break;
+		}
+
+		strcpy(uniform, "material.");
+
+		glUniform1i(glGetUniformLocation(s, strcat(strcat(uniform, name), num)), i);
+		printf("%s\n", uniform);
 		glBindTexture(GL_TEXTURE_2D, m.textures[i].id);
 	}
 

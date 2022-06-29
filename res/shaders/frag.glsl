@@ -11,8 +11,8 @@ out vec4 FragColor;
 uniform vec3 view_pos;
 
 struct material_t {
-	sampler2D diffuse_tex;
-	sampler2D specular_tex;
+	sampler2D tex_diffuse0;
+	sampler2D tex_specular0;
 	float shininess;
 }; uniform material_t material;
 
@@ -34,9 +34,9 @@ vec3 get_light_point(light_point_t l, vec3 normal, vec3 frag_pos, vec3 view_dir)
 	float distance = length(l.pos - frag_pos);
 	float attenuation = 1.0 / (l.constant + l.linear * distance + l.quadratic * (distance * distance));
 
-	vec3 ambient_color = l.ambient_color * vec3(texture(material.diffuse_tex, uv));
-	vec3 diffuse_color = l.diffuse_color * diffuse_amount * vec3(texture(material.diffuse_tex, uv));
-	vec3 specular_color = l.specular_color * specular_amount * vec3(texture(material.specular_tex, uv).r);
+	vec3 ambient_color = l.ambient_color * vec3(texture(material.tex_diffuse0, uv));
+	vec3 diffuse_color = l.diffuse_color * diffuse_amount * vec3(texture(material.tex_diffuse0, uv));
+	vec3 specular_color = l.specular_color * specular_amount * vec3(texture(material.tex_specular0, uv).r);
 	ambient_color *= attenuation;
 	diffuse_color *= attenuation;
 	specular_color *= attenuation;
@@ -56,9 +56,9 @@ vec3 get_light_dir(light_dir_t l, vec3 normal, vec3 view_dir) {
 	vec3 reflect_dir = reflect(-light_dir, normal);
 	float specular_amount = pow(max(dot(view_dir, reflect_dir), 0.0), material.shininess);
 
-	vec3 ambient_color = l.ambient_color * vec3(texture(material.diffuse_tex, uv));
-	vec3 diffuse_color = l.diffuse_color * diffuse_amount * vec3(texture(material.diffuse_tex, uv));
-	vec3 specular_color = l.specular_color * specular_amount * vec3(texture(material.specular_tex, uv).r);
+	vec3 ambient_color = l.ambient_color * vec3(texture(material.tex_diffuse0, uv));
+	vec3 diffuse_color = l.diffuse_color * diffuse_amount * vec3(texture(material.tex_diffuse0, uv));
+	vec3 specular_color = l.specular_color * specular_amount * vec3(texture(material.tex_specular0, uv).r);
 	return (ambient_color + diffuse_color + specular_color);
 }
 

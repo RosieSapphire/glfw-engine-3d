@@ -16,7 +16,7 @@ typedef struct {
 } mesh_t;
 
 mesh_t mesh_create(vertex_t *vertices, GLuint *indices, texture_t *textures, const GLuint vertex_count, const GLuint index_count, const GLuint texture_count);
-void mesh_draw(mesh_t m);
+void mesh_draw(mesh_t m, GLuint s);
 void mesh_destroy(mesh_t *m);
 
 #endif
