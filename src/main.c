@@ -8,6 +8,7 @@
 #include "file.h"
 #include "shader.h"
 #include "camera.h"
+#include "mesh.h"
 
 #define WINDOW_WIDTH	1280
 #define WINDOW_HEIGHT	720
@@ -31,7 +32,7 @@ int main(void) {
 
 	camera_t cam;
 
-	GLuint vao, vbo, ebo;
+	mesh_t mesh_cube;
 	GLuint vao_light;
 
 	GLuint shader_program;
@@ -53,54 +54,49 @@ int main(void) {
 	vec3 light_ambient_color;
 	vec3 light_diffuse_color;
 
-	GLfloat vertices[] = {
-		-0.5f, -0.5f, -0.5f,	 0.0f,  0.0f, -1.0f,	0.0f, 0.0f, // front face
-		 0.5f, -0.5f, -0.5f,	 0.0f,  0.0f, -1.0f,	1.0f, 0.0f,
-		-0.5f,  0.5f, -0.5f,	 0.0f,  0.0f, -1.0f,	0.0f, 1.0f,
-		 0.5f,  0.5f, -0.5f,	 0.0f,  0.0f, -1.0f,	1.0f, 1.0f,
+	vertex_t vertices[] = {
+		{{-0.5f, -0.5f, -0.5f},	 {0.0f,  0.0f, -1.0f},	{0.0f, 0.0f}}, // front face
+		{{ 0.5f, -0.5f, -0.5f},	 {0.0f,  0.0f, -1.0f},	{1.0f, 0.0f}},
+		{{-0.5f,  0.5f, -0.5f},	 {0.0f,  0.0f, -1.0f},	{0.0f, 1.0f}},
+		{{ 0.5f,  0.5f, -0.5f},	 {0.0f,  0.0f, -1.0f},	{1.0f, 1.0f}},
 
-		-0.5f, -0.5f,  0.5f,	 0.0f,  0.0f,  1.0f,	1.0f, 0.0f, // back face
-		 0.5f, -0.5f,  0.5f,	 0.0f,  0.0f,  1.0f,	0.0f, 0.0f,
-		-0.5f,  0.5f,  0.5f,	 0.0f,  0.0f,  1.0f,	1.0f, 1.0f,
-		 0.5f,  0.5f,  0.5f,	 0.0f,  0.0f,  1.0f,	0.0f, 1.0f,
+		{{-0.5f, -0.5f,  0.5f},	 {0.0f,  0.0f,  1.0f},	{1.0f, 0.0f}}, // back face
+		{{ 0.5f, -0.5f,  0.5f},	 {0.0f,  0.0f,  1.0f},	{0.0f, 0.0f}},
+		{{-0.5f,  0.5f,  0.5f},	 {0.0f,  0.0f,  1.0f},	{1.0f, 1.0f}},
+		{{ 0.5f,  0.5f,  0.5f},	 {0.0f,  0.0f,  1.0f},	{0.0f, 1.0f}},
 
-		-0.5f, -0.5f,  0.5f,	-1.0f,  0.0f,  0.0f,	0.0f, 0.0f, // left face
-		-0.5f, -0.5f, -0.5f,	-1.0f,  0.0f,  0.0f,	1.0f, 0.0f,
-		-0.5f,  0.5f,  0.5f,	-1.0f,  0.0f,  0.0f,	0.0f, 1.0f,
-		-0.5f,  0.5f, -0.5f,	-1.0f,  0.0f,  0.0f,	1.0f, 1.0f,
+		{{-0.5f, -0.5f,  0.5f},	{-1.0f,  0.0f,  0.0f},	{0.0f, 0.0f}}, // left face
+		{{-0.5f, -0.5f, -0.5f},	{-1.0f,  0.0f,  0.0f},	{1.0f, 0.0f}},
+		{{-0.5f,  0.5f,  0.5f},	{-1.0f,  0.0f,  0.0f},	{0.0f, 1.0f}},
+		{{-0.5f,  0.5f, -0.5f},	{-1.0f,  0.0f,  0.0f},	{1.0f, 1.0f}},
 
-		 0.5f, -0.5f,  0.5f,	 1.0f,  0.0f,  0.0f,	1.0f, 0.0f, // right face
-		 0.5f, -0.5f, -0.5f,	 1.0f,  0.0f,  0.0f,	0.0f, 0.0f,
-		 0.5f,  0.5f,  0.5f,	 1.0f,  0.0f,  0.0f,	1.0f, 1.0f,
-		 0.5f,  0.5f, -0.5f,	 1.0f,  0.0f,  0.0f,	0.0f, 1.0f,
+		{{ 0.5f, -0.5f,  0.5f},	 {1.0f,  0.0f,  0.0f},	{1.0f, 0.0f}}, // right face
+		{{ 0.5f, -0.5f, -0.5f},	 {1.0f,  0.0f,  0.0f},	{0.0f, 0.0f}},
+		{{ 0.5f,  0.5f,  0.5f},	 {1.0f,  0.0f,  0.0f},	{1.0f, 1.0f}},
+		{{ 0.5f,  0.5f, -0.5f},	 {1.0f,  0.0f,  0.0f},	{0.0f, 1.0f}},
 
-		-0.5f,  0.5f, -0.5f,	 0.0f,  1.0f,  0.0f,	0.0f, 0.0f, // top face
-		 0.5f,  0.5f, -0.5f,	 0.0f,  1.0f,  0.0f,	1.0f, 0.0f,
-		-0.5f,  0.5f,  0.5f,	 0.0f,  1.0f,  0.0f,	0.0f, 1.0f,
-		 0.5f,  0.5f,  0.5f,	 0.0f,  1.0f,  0.0f,	1.0f, 1.0f,
+		{{-0.5f,  0.5f, -0.5f},	 {0.0f,  1.0f,  0.0f},	{0.0f, 0.0f}}, // top face
+		{{ 0.5f,  0.5f, -0.5f},	 {0.0f,  1.0f,  0.0f},	{1.0f, 0.0f}},
+		{{-0.5f,  0.5f,  0.5f},	 {0.0f,  1.0f,  0.0f},	{0.0f, 1.0f}},
+		{{ 0.5f,  0.5f,  0.5f},	 {0.0f,  1.0f,  0.0f},	{1.0f, 1.0f}},
 
-		-0.5f, -0.5f, -0.5f,	 0.0f, -1.0f,  0.0f,	0.0f, 0.0f, // bottom face
-		 0.5f, -0.5f, -0.5f,	 0.0f, -1.0f,  0.0f,	1.0f, 0.0f,
-		-0.5f, -0.5f,  0.5f,	 0.0f, -1.0f,  0.0f,	0.0f, 1.0f,
-		 0.5f, -0.5f,  0.5f,	 0.0f, -1.0f,  0.0f,	1.0f, 1.0f,
+		{{-0.5f, -0.5f, -0.5f},	 {0.0f, -1.0f,  0.0f},	{0.0f, 0.0f}}, // bottom face
+		{{ 0.5f, -0.5f, -0.5f},	 {0.0f, -1.0f,  0.0f},	{1.0f, 0.0f}},
+		{{-0.5f, -0.5f,  0.5f},	 {0.0f, -1.0f,  0.0f},	{0.0f, 1.0f}},
+		{{ 0.5f, -0.5f,  0.5f},	 {0.0f, -1.0f,  0.0f},	{1.0f, 1.0f}},
 	};
 
 	GLuint indices[] = {
 		0, 1, 2,
 		2, 1, 3,
-
 		4, 5, 6,
 		6, 5, 7,
-
 		8, 9, 10,
 		10, 9, 11,
-
 		12, 13, 14,
 		14, 13, 15,
-
 		16, 17, 18,
 		18, 17, 19,
-
 		20, 21, 22,
 		22, 21, 23
 	};
@@ -168,23 +164,7 @@ int main(void) {
 	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
 	/* getting the buffers set up */
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
-
-	glGenBuffers(1, &vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	glGenBuffers(1, &ebo);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), NULL);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid *)(3 * sizeof(GLfloat)));
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid *)(6 * sizeof(GLfloat)));
-	glEnableVertexAttribArray(0);
-	glEnableVertexAttribArray(1);
-	glEnableVertexAttribArray(2);
+	mesh_cube = mesh_create(vertices, indices, NULL, sizeof(vertices) / sizeof(vertex_t), sizeof(indices) / sizeof(GLuint), 0);
 
 	shader_program = shader_create("res/shaders/vert.glsl", "res/shaders/frag.glsl");
 	glUseProgram(shader_program);
@@ -244,7 +224,6 @@ int main(void) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	stbi_set_flip_vertically_on_load(1);
 	tex_specular_data = stbi_load("res/textures/box-specular.png", &tex_specular_width, &tex_specular_height, &tex_specular_channels, 0);
 	if(!tex_specular_data) {
 		printf("ERROR: Specular texture fucked up.\n");
@@ -259,7 +238,7 @@ int main(void) {
 	/* creating the light buffers */
 	glGenVertexArrays(1, &vao_light);
 	glBindVertexArray(vao_light);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, mesh_cube.vbo);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), NULL);
 	glEnableVertexAttribArray(0);
 
@@ -273,7 +252,7 @@ int main(void) {
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	/* main loop */
-	glfwSetCursorPos(window, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
+	glfwSetCursorPos(window, (double)WINDOW_WIDTH / 2, (double)WINDOW_HEIGHT / 2);
 	while(!glfwWindowShouldClose(window)) {
 		if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 			glfwSetWindowShouldClose(window, 1);
@@ -285,8 +264,8 @@ int main(void) {
 
 		/* camera look */
 		glfwGetCursorPos(window, &mouse_x, &mouse_y);
-		mouse_x -= WINDOW_WIDTH / 2;
-		mouse_y -= WINDOW_HEIGHT / 2;
+		mouse_x -= (double)WINDOW_WIDTH / 2;
+		mouse_y -= (double)WINDOW_HEIGHT / 2;
 
 		cam.rot[0] += mouse_x * CAM_SENSITIVITY;
 		cam.rot[1] -= mouse_y * CAM_SENSITIVITY;
@@ -299,7 +278,7 @@ int main(void) {
 		glm_cross(cam.dir, cam.up, cam.right);
 		glm_normalize(cam.right);
 
-		glfwSetCursorPos(window, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
+		glfwSetCursorPos(window, (double)WINDOW_WIDTH / 2, (double)WINDOW_HEIGHT / 2);
 
 		/* toggling wireframe */
 		if(glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS && !first_press) {
@@ -347,7 +326,7 @@ int main(void) {
 		else
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glUseProgram(shader_program);
@@ -361,8 +340,8 @@ int main(void) {
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, tex_specular);
 
-		glBindVertexArray(vao);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+		glBindVertexArray(mesh_cube.vao);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh_cube.ebo);
 
 		for(GLuint i = 0; i < 10; i++) {
 			mat4 model_mat;
@@ -380,7 +359,7 @@ int main(void) {
 		glUniform3fv(glGetUniformLocation(light_shader_program, "light_color"), 1, (const GLfloat *)light_color);
 
 		glBindVertexArray(vao_light);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh_cube.ebo);
 		for(GLuint i = 0; i < 4; i++) {
 			mat4 light_mat;
 			glm_mat4_copy(GLM_MAT4_IDENTITY, light_mat);
@@ -393,6 +372,8 @@ int main(void) {
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
+
+	mesh_destroy(&mesh_cube);
 
 	glDeleteShader(shader_program);
 	glDeleteShader(light_shader_program);
