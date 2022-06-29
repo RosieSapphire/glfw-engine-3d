@@ -199,12 +199,12 @@ int main(void) {
 	glUniform3f(glGetUniformLocation(shader_program, "light_dir.specular_color"), 1.0f, 1.0f, 1.0f);
 
 	for(GLuint i = 0; i < 4; i++) {
-		char buffer[128];
+		char buffer[128] = { 0 };
 		sprintf(buffer, "light_points[%d].pos", i);
 		glUniform3fv(glGetUniformLocation(shader_program, buffer), 1, (const GLfloat *)light_point_positions[i]);
 		sprintf(buffer, "light_points[%d].ambient_color", i);
 		glUniform3fv(glGetUniformLocation(shader_program, buffer), 1, (const GLfloat *)light_ambient_color);
-		sprintf(buffer, "light_point[%d].diffuse_color", i);
+		sprintf(buffer, "light_points[%d].diffuse_color", i);
 		glUniform3fv(glGetUniformLocation(shader_program, buffer), 1, (const GLfloat *)light_diffuse_color);
 		sprintf(buffer, "light_points[%d].specular_color", i);
 		glUniform3f(glGetUniformLocation(shader_program, buffer), 1.0f, 1.0f, 1.0f);
@@ -375,19 +375,18 @@ int main(void) {
 		}
 
 		glUseProgram(light_shader_program);
-		glUniformMatrix4fv(glGetUniformLocation(shader_program, "view"), 1, GL_FALSE, (const GLfloat *)matrix_view);
-		glUniformMatrix4fv(glGetUniformLocation(shader_program, "projection"), 1, GL_FALSE, (const GLfloat *)matrix_projection);
+		glUniformMatrix4fv(glGetUniformLocation(light_shader_program, "view"), 1, GL_FALSE, (const GLfloat *)matrix_view);
+		glUniformMatrix4fv(glGetUniformLocation(light_shader_program, "projection"), 1, GL_FALSE, (const GLfloat *)matrix_projection);
 		glUniform3fv(glGetUniformLocation(light_shader_program, "light_color"), 1, (const GLfloat *)light_color);
 
 		glBindVertexArray(vao_light);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-
 		for(GLuint i = 0; i < 4; i++) {
 			mat4 light_mat;
 			glm_mat4_copy(GLM_MAT4_IDENTITY, light_mat);
 			glm_translate(light_mat, light_point_positions[i]);
 			glm_scale(light_mat, (vec3){0.2f, 0.2f, 0.2f});
-			glUniformMatrix4fv(glGetUniformLocation(shader_program, "model"), 1, GL_FALSE, (const GLfloat *)light_mat);
+			glUniformMatrix4fv(glGetUniformLocation(light_shader_program, "model"), 1, GL_FALSE, (const GLfloat *)light_mat);
 			glDrawElements(GL_TRIANGLES, sizeof(indices) / 3, GL_UNSIGNED_INT, 0);
 		}
 
