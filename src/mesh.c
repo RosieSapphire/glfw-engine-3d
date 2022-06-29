@@ -16,10 +16,8 @@ mesh_t mesh_create(vertex_t *vertices, GLuint *indices, texture_t *textures, con
 		glm_vec2_copy(vertices[i].uv, m.vertices[i].uv);
 	}
 
-	for(i = 0; i < index_count; i++) {
+	for(i = 0; i < index_count; i++)
 		m.indices[i] = indices[i];
-		printf("%d\n", indices[i]);
-	}
 
 	for(i = 0; i < texture_count; i++)
 		m.textures[i] = textures[i];
@@ -44,7 +42,26 @@ mesh_t mesh_create(vertex_t *vertices, GLuint *indices, texture_t *textures, con
 
 	glBindVertexArray(0);
 
+	m.vertex_count = vertex_count;
+	m.index_count = index_count;
+	m.texture_count = texture_count;
+
 	return m;
+}
+
+void mesh_draw(mesh_t m) {
+	/* GLuint diffuse_count;
+	GLuint specular_count; */
+	GLuint i;
+
+	for(i = 0; i < m.texture_count; i++) {
+		glActiveTexture(GL_TEXTURE0 + i);
+		glBindTexture(GL_TEXTURE_2D, m.textures[i].id);
+	}
+
+	glBindVertexArray(m.vao);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m.ebo);
+	glDrawElements(GL_TRIANGLES, m.index_count, GL_UNSIGNED_INT, 0);
 }
 
 void mesh_destroy(mesh_t *m) {

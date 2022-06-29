@@ -2,12 +2,10 @@
 #include <stdlib.h>
 #include <math.h>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include "texture.h"
 
 #include "file.h"
 #include "shader.h"
-#include "camera.h"
 #include "mesh.h"
 
 #define WINDOW_WIDTH	1280
@@ -32,21 +30,12 @@ int main(void) {
 
 	camera_t cam;
 
-	mesh_t mesh_cube;
-	GLuint vao_light;
-
 	GLuint shader_program;
 	GLuint light_shader_program;
+	texture_t textures[2];
+	mesh_t mesh_cube;
+	mesh_t mesh_light;
 
-	GLuint tex_diffuse;
-	GLint tex_diffuse_width, tex_diffuse_height, tex_diffuse_channels;
-	GLubyte *tex_diffuse_data;
-
-	GLuint tex_specular;
-	GLint tex_specular_width, tex_specular_height, tex_specular_channels;
-	GLubyte *tex_specular_data;
-
-	mat4 matrix_model;
 	mat4 matrix_projection;
 	mat4 matrix_view;
 
@@ -125,7 +114,6 @@ int main(void) {
 	glm_vec3_scale(light_color, 0.5f, light_diffuse_color);
 	glm_vec3_scale(light_diffuse_color, 0.2f, light_ambient_color);
 
-	glm_mat4_copy(GLM_MAT4_IDENTITY, matrix_model);
 	glm_perspective(glm_rad(45.0f), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 1000.0f, matrix_projection);
 	glm_mat4_copy(GLM_MAT4_IDENTITY, matrix_view);
 
@@ -140,11 +128,10 @@ int main(void) {
 		return 1;
 	}
 
+	/* creating a window */
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-	/* creating a window */
 	window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE, NULL, NULL);
 	if(!window) {
 		printf("ERROR: Window fucked up.\n");
@@ -163,9 +150,7 @@ int main(void) {
 
 	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
-	/* getting the buffers set up */
-	mesh_cube = mesh_create(vertices, indices, NULL, sizeof(vertices) / sizeof(vertex_t), sizeof(indices) / sizeof(GLuint), 0);
-
+	/* loading shaders */
 	shader_program = shader_create("res/shaders/vert.glsl", "res/shaders/frag.glsl");
 	glUseProgram(shader_program);
 	glUniform1i(glGetUniformLocation(shader_program, "material.diffuse_tex"), 0);
@@ -196,63 +181,25 @@ int main(void) {
 		glUniform1f(glGetUniformLocation(shader_program, buffer), 0.032f);
 	}
 
-	/* loading diffuse texture */
-	glGenTextures(1, &tex_diffuse);
-	glBindTexture(GL_TEXTURE_2D, tex_diffuse);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	stbi_set_flip_vertically_on_load(1);
-	tex_diffuse_data = stbi_load("res/textures/box-diffuse.png", &tex_diffuse_width, &tex_diffuse_height, &tex_diffuse_channels, 0);
-	if(!tex_diffuse_data) {
-		printf("ERROR: Diffuse texture fucked up.\n");
-		glfwTerminate();
-		return 1;
-	}
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_diffuse_width, tex_diffuse_height, 0, GL_RGB, GL_UNSIGNED_BYTE, tex_diffuse_data);
-	glGenerateMipmap(GL_TEXTURE_2D);
-	stbi_image_free(tex_diffuse_data);
-
-	/* loading specular texture */
-	glGenTextures(1, &tex_specular);
-	glBindTexture(GL_TEXTURE_2D, tex_specular);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	tex_specular_data = stbi_load("res/textures/box-specular.png", &tex_specular_width, &tex_specular_height, &tex_specular_channels, 0);
-	if(!tex_specular_data) {
-		printf("ERROR: Specular texture fucked up.\n");
-		glfwTerminate();
-		return 1;
-	}
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, tex_specular_width, tex_specular_height, 0, GL_RED, GL_UNSIGNED_BYTE, tex_specular_data);
-	glGenerateMipmap(GL_TEXTURE_2D);
-	stbi_image_free(tex_specular_data);
-
-	/* creating the light buffers */
-	glGenVertexArrays(1, &vao_light);
-	glBindVertexArray(vao_light);
-	glBindBuffer(GL_ARRAY_BUFFER, mesh_cube.vbo);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), NULL);
-	glEnableVertexAttribArray(0);
-
 	light_shader_program = shader_create("res/shaders/light-vert.glsl", "res/shaders/light-frag.glsl");
 	glUseProgram(light_shader_program);
+
+	/* loading textures */
+	textures[0] = texture_create("res/textures/box-diffuse.png", TT_DIFFUSE);
+	textures[1] = texture_create("res/textures/box-specular.png", TT_SPECULAR);
+
+	/* loading meshes */
+	mesh_cube = mesh_create(vertices, indices, textures, sizeof(vertices) / sizeof(vertex_t), sizeof(indices) / sizeof(GLuint), 2);
+	mesh_light = mesh_create(vertices, indices, NULL, sizeof(vertices) / sizeof(vertex_t), sizeof(indices) / sizeof(GLuint), 0);
+
+	glEnable(GL_DEPTH_TEST);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	glfwSetCursorPos(window, (double)WINDOW_WIDTH / 2, (double)WINDOW_HEIGHT / 2);
 
 	time_now = glfwGetTime();
 	time_last = time_now;
 
-	glEnable(GL_DEPTH_TEST);
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
 	/* main loop */
-	glfwSetCursorPos(window, (double)WINDOW_WIDTH / 2, (double)WINDOW_HEIGHT / 2);
 	while(!glfwWindowShouldClose(window)) {
 		if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 			glfwSetWindowShouldClose(window, 1);
@@ -311,7 +258,6 @@ int main(void) {
 
 		glm_vec3_lerp(cam.pos, cam.pos_end, (float)time_delta * CAM_MOVE_SPEED, cam.pos);
 
-		glm_mat4_copy(GLM_MAT4_IDENTITY, matrix_model);
 		glm_mat4_copy(GLM_MAT4_IDENTITY, matrix_view);
 
 		glm_vec3_add(cam.pos, cam.dir, cam.tar);
@@ -330,19 +276,9 @@ int main(void) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glUseProgram(shader_program);
-		glUniformMatrix4fv(glGetUniformLocation(shader_program, "model"), 1, GL_FALSE, (const GLfloat *)matrix_model);
 		glUniformMatrix4fv(glGetUniformLocation(shader_program, "view"), 1, GL_FALSE, (const GLfloat *)matrix_view);
 		glUniformMatrix4fv(glGetUniformLocation(shader_program, "projection"), 1, GL_FALSE, (const GLfloat *)matrix_projection);
 		glUniform3fv(glGetUniformLocation(shader_program, "view_pos"), 1, (const GLfloat *)cam.pos);
-
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, tex_diffuse);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, tex_specular);
-
-		glBindVertexArray(mesh_cube.vao);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh_cube.ebo);
-
 		for(GLuint i = 0; i < 10; i++) {
 			mat4 model_mat;
 			float angle = 20 * i + (time_elapsed * GLM_PI * 12);
@@ -350,33 +286,33 @@ int main(void) {
 			glm_translate(model_mat, cube_positions[i]);
 			glm_rotate(model_mat, glm_rad(angle), (vec3){1.0f, 0.3f, 0.5f});
 			glUniformMatrix4fv(glGetUniformLocation(shader_program, "model"), 1, GL_FALSE, (const GLfloat *)model_mat);
-			glDrawElements(GL_TRIANGLES, sizeof(indices) / 3, GL_UNSIGNED_INT, 0);
+			mesh_draw(mesh_cube);
 		}
 
 		glUseProgram(light_shader_program);
 		glUniformMatrix4fv(glGetUniformLocation(light_shader_program, "view"), 1, GL_FALSE, (const GLfloat *)matrix_view);
 		glUniformMatrix4fv(glGetUniformLocation(light_shader_program, "projection"), 1, GL_FALSE, (const GLfloat *)matrix_projection);
 		glUniform3fv(glGetUniformLocation(light_shader_program, "light_color"), 1, (const GLfloat *)light_color);
-
-		glBindVertexArray(vao_light);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh_cube.ebo);
 		for(GLuint i = 0; i < 4; i++) {
 			mat4 light_mat;
 			glm_mat4_copy(GLM_MAT4_IDENTITY, light_mat);
 			glm_translate(light_mat, light_point_positions[i]);
 			glm_scale(light_mat, (vec3){0.2f, 0.2f, 0.2f});
 			glUniformMatrix4fv(glGetUniformLocation(light_shader_program, "model"), 1, GL_FALSE, (const GLfloat *)light_mat);
-			glDrawElements(GL_TRIANGLES, sizeof(indices) / 3, GL_UNSIGNED_INT, 0);
+			mesh_draw(mesh_light);
 		}
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
 
+	mesh_destroy(&mesh_light);
 	mesh_destroy(&mesh_cube);
-
-	glDeleteShader(shader_program);
+	texture_destroy(&textures[1]);
+	texture_destroy(&textures[0]);
 	glDeleteShader(light_shader_program);
+	glDeleteShader(shader_program);
+
 	glfwTerminate();
 
 	return 0;
