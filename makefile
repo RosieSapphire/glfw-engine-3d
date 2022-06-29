@@ -7,7 +7,7 @@ CFLAGS=-std=c99
 SRC=main.c glad.c file.c shader.c
 OBJ=main.o glad.o file.o shader.o
 
-BIN=new-attempt
+BIN=glfw-engine-3d
 
 all: release
 

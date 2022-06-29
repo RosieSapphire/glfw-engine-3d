@@ -9,9 +9,9 @@
 #include "shader.h"
 #include "camera.h"
 
-#define WINDOW_WIDTH	800
-#define WINDOW_HEIGHT	800
-#define WINDOW_TITLE	"Attempt Numero Dos"
+#define WINDOW_WIDTH	1280
+#define WINDOW_HEIGHT	720
+#define WINDOW_TITLE	"Let's Fucking Go!"
 
 #define CAM_MOVE_SPEED	12.0f
 #define CAM_SENSITIVITY	0.16f
@@ -130,7 +130,7 @@ int main(void) {
 	glm_vec3_scale(light_diffuse_color, 0.2f, light_ambient_color);
 
 	glm_mat4_copy(GLM_MAT4_IDENTITY, matrix_model);
-	glm_perspective(glm_rad(45.0f), WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 1000.0f, matrix_projection);
+	glm_perspective(glm_rad(45.0f), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 1000.0f, matrix_projection);
 	glm_mat4_copy(GLM_MAT4_IDENTITY, matrix_view);
 
 	/* camera initialization */
@@ -347,7 +347,7 @@ int main(void) {
 		else
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-		glClearColor(0.2f, 0.1f, 0.6f, 1.0f);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glUseProgram(shader_program);
