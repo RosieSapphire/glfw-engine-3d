@@ -15,6 +15,10 @@
 #define CAM_MOVE_SPEED	12.0f
 #define CAM_SENSITIVITY	0.16f
 
+void error_callback(int a, const char *err) {
+	printf("ERROR: %s CODE: %d\n", err, a);
+}
+
 int main(void) {
 	GLFWwindow *window;
 
@@ -127,6 +131,8 @@ int main(void) {
 		printf("ERROR: GLFW fucked up.\n");
 		return 1;
 	}
+
+	glfwSetErrorCallback(error_callback);
 
 	/* creating a window */
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);

@@ -82,7 +82,6 @@ void mesh_draw(mesh_t m, GLuint s) {
 		strcpy(uniform, "material.");
 
 		glUniform1i(glGetUniformLocation(s, strcat(strcat(uniform, name), num)), i);
-		printf("%s\n", uniform);
 		glBindTexture(GL_TEXTURE_2D, m.textures[i].id);
 	}
 

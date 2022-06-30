@@ -4,8 +4,8 @@ LIB=-lglfw3 -lGL -lX11 -lpthread -lXrandr -lXi -ldl -lm
 
 CFLAGS=-std=c99
 
-SRC=main.c glad.c file.c shader.c mesh.c texture.c
-OBJ=main.o glad.o file.o shader.o mesh.o texture.o
+SRC=main.c glad.c file.c shader.c mesh.c texture.c#model.c
+OBJ=main.o glad.o file.o shader.o mesh.o texture.o#model.o
 
 BIN=glfw-engine-3d
 
