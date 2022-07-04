@@ -6,7 +6,7 @@
 
 #include "file.h"
 #include "shader.h"
-#include "mesh.h"
+#include "model.h"
 
 #define WINDOW_WIDTH	1280
 #define WINDOW_HEIGHT	720
@@ -39,6 +39,8 @@ int main(void) {
 	texture_t textures[2];
 	mesh_t mesh_cube;
 	mesh_t mesh_light;
+
+	model_t model_test;
 
 	mat4 matrix_projection;
 	mat4 matrix_view;
@@ -193,8 +195,10 @@ int main(void) {
 	textures[1] = texture_create("res/textures/box-specular.png", TT_SPECULAR);
 
 	/* loading meshes */
+	model_test = model_create("res/models/room/room.gltf");
 	mesh_cube = mesh_create(vertices, indices, textures, sizeof(vertices) / sizeof(vertex_t), sizeof(indices) / sizeof(GLuint), 2);
 	mesh_light = mesh_create(vertices, indices, NULL, sizeof(vertices) / sizeof(vertex_t), sizeof(indices) / sizeof(GLuint), 0);
+
 
 	glEnable(GL_DEPTH_TEST);
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -290,7 +294,22 @@ int main(void) {
 			glm_translate(model_mat, cube_positions[i]);
 			glm_rotate(model_mat, glm_rad(angle), (vec3){1.0f, 0.3f, 0.5f});
 			glUniformMatrix4fv(glGetUniformLocation(shader_program, "model"), 1, GL_FALSE, (const GLfloat *)model_mat);
-			mesh_draw(mesh_cube, shader_program);
+			// mesh_draw(mesh_cube, shader_program);
+		}
+
+		{
+			mat4 model_test_mat;
+			glm_mat4_copy(GLM_MAT4_IDENTITY, model_test_mat);
+
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, textures[0].id);
+			glUniform1i(glGetUniformLocation(shader_program, "material.tex_diffuse0"), 0);
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D, textures[1].id);
+			glUniform1i(glGetUniformLocation(shader_program, "material.tex_specular0"), 1);
+
+			glUniformMatrix4fv(glGetUniformLocation(shader_program, "model"), 1, GL_FALSE, (const GLfloat *)model_test_mat);
+			model_draw(model_test, shader_program);
 		}
 
 		glUseProgram(light_shader_program);
@@ -310,6 +329,7 @@ int main(void) {
 		glfwPollEvents();
 	}
 
+	model_destroy(&model_test);
 	mesh_destroy(&mesh_light);
 	mesh_destroy(&mesh_cube);
 	texture_destroy(&textures[1]);

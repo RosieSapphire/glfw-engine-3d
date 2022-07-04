@@ -51,6 +51,7 @@ texture_t texture_create(const char *path, const texture_type_t type) {
 	}
 
 	glGenerateMipmap(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, 0);
 	stbi_image_free(data);
 
 	return t;
