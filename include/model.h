@@ -12,8 +12,8 @@ typedef struct {
 	GLuint mesh_count;
 } model_t;
 
-model_t model_create(const char *path);
-void model_process_node(model_t *m, struct aiNode *node, const struct aiScene *scene);
+model_t model_create(const char *path, texture_t *textures, const GLuint texture_count);
+void model_process_node(model_t *m, struct aiNode *node, const struct aiScene *scene, texture_t *textures, const GLuint texture_count);
 void model_draw(model_t m, GLuint s);
 void model_destroy(model_t *m);
 

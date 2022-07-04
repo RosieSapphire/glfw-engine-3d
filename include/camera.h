@@ -6,7 +6,6 @@
 typedef struct {
 	vec2 rot;
 	vec3 pos;
-	vec3 pos_end;
 	vec3 dir;
 	vec3 tar;
 	vec3 up;

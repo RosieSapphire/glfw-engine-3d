@@ -1,6 +1,6 @@
 #include "model.h"
 
-model_t model_create(const char *path) {
+model_t model_create(const char *path, texture_t *textures, const GLuint texture_count) {
 	const struct aiScene *scene = aiImportFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_RemoveRedundantMaterials);
 	model_t m;
 	m.meshes = NULL;
@@ -12,12 +12,12 @@ model_t model_create(const char *path) {
 		return m;
 	}
 
-	model_process_node(&m, scene->mRootNode, scene);
+	model_process_node(&m, scene->mRootNode, scene, textures, texture_count);
 
 	return m;
 }
 
-void model_process_node(model_t *m, struct aiNode *node, const struct aiScene *scene) {
+void model_process_node(model_t *m, struct aiNode *node, const struct aiScene *scene, texture_t *textures, const GLuint texture_count) {
 	GLuint i;
 
 	if(!m->mesh_count) {
@@ -28,18 +28,15 @@ void model_process_node(model_t *m, struct aiNode *node, const struct aiScene *s
 		m->meshes = realloc(m->meshes, m->mesh_count * sizeof(mesh_t));
 	}
 
+	printf("%d\n", node->mNumMeshes);
 	for(i = m->mesh_count - node->mNumMeshes; i < m->mesh_count; i++) {
 		const struct aiMesh *const mesh = scene->mMeshes[node->mMeshes[i]];
-		const struct aiMaterial *const mat = scene->mMaterials[mesh->mMaterialIndex];
 		GLuint j;
 		vertex_t *vertices = NULL;
 		GLuint *indices = NULL;
-		texture_t *textures = NULL;
+		texture_t selected_textures[2];
 
 		GLuint indices_counted = 0;
-		GLuint textures_loaded = 0;
-		GLuint diffuse_count = aiGetMaterialTextureCount(mat, aiTextureType_DIFFUSE);
-		GLuint specular_count = aiGetMaterialTextureCount(mat, aiTextureType_SPECULAR);
 
 		vertices = malloc(mesh->mNumVertices * sizeof(vertex_t));
 		for(j = 0; j < mesh->mNumVertices; j++) {
@@ -69,22 +66,10 @@ void model_process_node(model_t *m, struct aiNode *node, const struct aiScene *s
 			indices_counted = k;
 		}
 
-		textures = malloc((diffuse_count + specular_count) * sizeof(texture_t));
-		for(j = 0; j < diffuse_count; j++) {
-			struct aiString path;
-			aiGetMaterialTexture(mat, aiTextureType_DIFFUSE, j, &path, NULL, NULL, NULL, NULL, NULL, NULL);
-			textures[textures_loaded++] = texture_create(path.data, TT_DIFFUSE);
-		}
+		selected_textures[0] = textures[0 + (i * 2)];
+		selected_textures[1] = textures[1 + (i * 2)];
 
-		for(j = 0; j < specular_count; j++) {
-			struct aiString path;
-			aiGetMaterialTexture(mat, aiTextureType_SPECULAR, j, &path, NULL, NULL, NULL, NULL, NULL, NULL);
-			textures[textures_loaded++] = texture_create(path.data, TT_SPECULAR);
-		}
-		printf("%d, %d\n", diffuse_count, specular_count);
-
-		m->meshes[i] = mesh_create(vertices, indices, textures, mesh->mNumVertices, mesh->mNumFaces * 3, textures_loaded);
-		free(textures);
+		m->meshes[i] = mesh_create(vertices, indices, selected_textures, mesh->mNumVertices, mesh->mNumFaces * 3, 2);
 		free(indices);
 		free(vertices);
 		indices = NULL;
@@ -92,7 +77,7 @@ void model_process_node(model_t *m, struct aiNode *node, const struct aiScene *s
 	}
 
 	for(i = 0; i < node->mNumChildren; i++) {
-		model_process_node(m, node->mChildren[i], scene);
+		model_process_node(m, node->mChildren[i], scene, textures, texture_count);
 	}
 }
 
