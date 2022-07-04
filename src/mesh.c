@@ -76,7 +76,9 @@ void mesh_draw(mesh_t m, GLuint s) {
 
 			default:
 				name = "unknown";
-				break;
+				printf("ERROR: Unknown texture type");
+				glfwTerminate();
+				return;
 		}
 
 		strcpy(uniform, "material.");

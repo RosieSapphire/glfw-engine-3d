@@ -119,18 +119,18 @@
     "images" : [
         {
             "mimeType" : "image/png",
-            "name" : "floor",
-            "uri" : "res/models/room/floor.png"
+            "name" : "floor-diffuse",
+            "uri" : "res/models/room/floor-diffuse.png"
         },
         {
             "mimeType" : "image/png",
-            "name" : "wall",
-            "uri" : "res/models/room/wall.png"
+            "name" : "wall-diffuse",
+            "uri" : "res/models/room/wall-diffuse.png"
         },
         {
             "mimeType" : "image/png",
-            "name" : "ceiling",
-            "uri" : "res/models/room/ceiling.png"
+            "name" : "ceiling-diffuse",
+            "uri" : "res/models/room/ceiling-diffuse.png"
         }
     ],
     "accessors" : [

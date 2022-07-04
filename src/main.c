@@ -110,10 +110,10 @@ int main(void) {
 	};
 
 	vec3 light_point_positions[] = {
-		{ 0.7f,  0.2f,   2.0f},
-		{ 2.3f, -3.3f,  -4.0f},
-		{-4.0f,  2.0f, -12.0f},
-		{ 0.0f,  0.0f,  -3.0f},
+		{-4.0f,  2.5f,  -3.0f},
+		{-4.0f,  2.5f,   3.0f},
+		{ 4.0f,  2.5f,   3.0f},
+		{ 4.0f,  2.5f,   0.25f},
 	};
 
 	glm_vec3_copy(GLM_VEC3_ONE, light_color);
@@ -195,7 +195,7 @@ int main(void) {
 	textures[1] = texture_create("res/textures/box-specular.png", TT_SPECULAR);
 
 	/* loading meshes */
-	model_test = model_create("res/models/room/room.gltf");
+	model_test = model_create("res/models/room/room.fbx");
 	mesh_cube = mesh_create(vertices, indices, textures, sizeof(vertices) / sizeof(vertex_t), sizeof(indices) / sizeof(GLuint), 2);
 	mesh_light = mesh_create(vertices, indices, NULL, sizeof(vertices) / sizeof(vertex_t), sizeof(indices) / sizeof(GLuint), 0);
 
