@@ -4,7 +4,7 @@
 #include <glad/glad.h>
 #include "vertex.h"
 #include "texture.h"
-#include "camera.h"
+#include "player.h"
 
 typedef struct {
 	vertex_t *vertices;
