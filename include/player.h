@@ -15,7 +15,8 @@ typedef struct {
 	vec3 dir;
 
 	vec3 headbob;
-	float move_delta;
+	float headbob_timer;
+	float headbob_intensity;
 } player_t;
 
 #endif

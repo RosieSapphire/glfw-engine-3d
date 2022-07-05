@@ -14,6 +14,8 @@
 
 #define PLAYER_MOVE_SPEED	4.0f
 #define PLAYER_LERP_SPEED	8.0f
+#define HEADBOB_LERP_SPEED	4.2f
+#define HEADBOB_INTENSITY	0.08f
 #define CAM_SENSITIVITY		0.16f
 
 void error_callback(int a, const char *err) {
@@ -119,6 +121,8 @@ int main(void) {
 	};
 
 	glm_vec3_copy(GLM_VEC3_ZERO, player.headbob);
+	player.headbob_timer = 0.0f;
+	player.headbob_intensity = 0.0f;
 	glm_vec3_copy(GLM_VEC3_ONE, light_color);
 	glm_vec3_scale(light_color, 0.5f, light_diffuse_color);
 	glm_vec3_scale(light_diffuse_color, 0.2f, light_ambient_color);
@@ -245,8 +249,6 @@ int main(void) {
 		if(player.rot[0] > 180.0f)
 			player.rot[0] = -180.0f;
 
-		printf("%f\n", player.rot[0]);
-
 		player.dir[0] = cos(glm_rad(player.rot[0])) * cos(glm_rad(player.rot[1]));
 		player.dir[1] = sin(glm_rad(player.rot[1]));
 		player.dir[2] = sin(glm_rad(player.rot[0])) * cos(glm_rad(player.rot[1]));
@@ -270,18 +272,36 @@ int main(void) {
 			const float player_speed = (float)time_delta * PLAYER_MOVE_SPEED;
 			vec3 player_move;
 
+			GLubyte any_key_pressed = 0;
+			GLubyte keys[4] = {
+				glfwGetKey(window, GLFW_KEY_A),
+				glfwGetKey(window, GLFW_KEY_D),
+				glfwGetKey(window, GLFW_KEY_W),
+				glfwGetKey(window, GLFW_KEY_S),
+			};
+
 			glm_vec3_copy(GLM_VEC3_ZERO, player_move);
-			if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-				glm_vec3_add(player_move, player.right, player_move);
-
-			if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+			if(keys[0]) {
 				glm_vec3_sub(player_move, player.right, player_move);
+			}
 
-			if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+			if(keys[1]) {
+				glm_vec3_add(player_move, player.right, player_move);
+			}
+
+			if(keys[2]) {
 				glm_vec3_add(player_move, player.dir, player_move);
+			}
 
-			if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+			if(keys[3]) {
 				glm_vec3_sub(player_move, player.dir, player_move);
+			}
+
+			for(GLubyte i = 0; i < 4; i++) {
+				any_key_pressed += keys[i];
+			}
+
+			player.headbob_intensity = glm_lerp(player.headbob_intensity, (float)(any_key_pressed > 0), time_delta * HEADBOB_LERP_SPEED);
 
 			glm_vec3_normalize(player_move);
 			glm_vec3_scale(player_move, player_speed, player_move);
@@ -298,17 +318,21 @@ int main(void) {
 			glm_vec3_copy(player.pos, old_pos);
 			glm_vec3_lerp(player.pos, player.pos_end, (float)time_delta * PLAYER_LERP_SPEED, player.pos);
 			glm_vec3_sub(player.pos, old_pos, move_vec);
-			player.move_delta = glm_vec3_norm(move_vec);
 		}
 
 		glm_mat4_copy(GLM_MAT4_IDENTITY, matrix_view);
 
-		player.headbob[0] = cosf(time_elapsed * GLM_PIf * 2) * player.move_delta;
-		player.headbob[1] = sinf(time_elapsed * GLM_PIf * 4) * player.move_delta * 0.66f;
-		player.headbob[2] = cosf(time_elapsed * GLM_PIf * 2) * player.move_delta;
+		player.headbob_timer += time_delta * player.headbob_intensity;
+		player.headbob[0] = cosf(player.headbob_timer * GLM_PIf * 2) * HEADBOB_INTENSITY;
+		player.headbob[1] = sinf(player.headbob_timer * GLM_PIf * 4) * HEADBOB_INTENSITY * 0.66f;
+		player.headbob[2] = cosf(player.headbob_timer * GLM_PIf * 2) * HEADBOB_INTENSITY;
 
 		player.headbob[0] *= -sinf(glm_rad(player.rot[0]));
 		player.headbob[2] *= cosf(glm_rad(player.rot[0]));
+		glm_vec3_scale(player.headbob, player.headbob_intensity, player.headbob);
+
+		printf("%f\n", player.headbob_intensity);
+
 
 		glm_vec3_add(player.pos, player.dir, player.tar);
 		glm_vec3_add(player.pos, player.headbob, player.pos_bobbed);
@@ -319,6 +343,7 @@ int main(void) {
 		glm_vec3_scale(light_diffuse_color, 0.2f, light_ambient_color);
 
 		/* drawing */
+		for(GLuint fuck = 0; fuck < 1; fuck++) {
 		if(draw_mode)
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		else
@@ -367,6 +392,7 @@ int main(void) {
 			glm_scale(light_mat, (vec3){0.2f, 0.2f, 0.2f});
 			glUniformMatrix4fv(glGetUniformLocation(light_shader_program, "model"), 1, GL_FALSE, (const GLfloat *)light_mat);
 			mesh_draw(mesh_light, light_shader_program);
+		}
 		}
 
 		glfwSwapBuffers(window);
