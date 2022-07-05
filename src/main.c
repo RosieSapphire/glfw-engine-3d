@@ -239,6 +239,14 @@ int main(void) {
 		if(player.rot[1] < -89.0f)
 			player.rot[1] = -89.0f;
 
+		if(player.rot[0] < -180.0f)
+			player.rot[0] = 180.0f;
+
+		if(player.rot[0] > 180.0f)
+			player.rot[0] = -180.0f;
+
+		printf("%f\n", player.rot[0]);
+
 		player.dir[0] = cos(glm_rad(player.rot[0])) * cos(glm_rad(player.rot[1]));
 		player.dir[1] = sin(glm_rad(player.rot[1]));
 		player.dir[2] = sin(glm_rad(player.rot[0])) * cos(glm_rad(player.rot[1]));
@@ -291,7 +299,6 @@ int main(void) {
 			glm_vec3_lerp(player.pos, player.pos_end, (float)time_delta * PLAYER_LERP_SPEED, player.pos);
 			glm_vec3_sub(player.pos, old_pos, move_vec);
 			player.move_delta = glm_vec3_norm(move_vec);
-			printf("%f\n", player.move_delta);
 		}
 
 		glm_mat4_copy(GLM_MAT4_IDENTITY, matrix_view);

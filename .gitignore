@@ -1,4 +1,5 @@
 glfw-engine-3d
 .cache/
 *.o
+*.blend1
 compile_commands.json
