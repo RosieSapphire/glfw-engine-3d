@@ -1,3 +1,6 @@
+#include <cglm/mat4.h>
+#include <cglm/quat.h>
+#include <cglm/vec3.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -8,22 +11,22 @@
 #include "shader.h"
 #include "model.h"
 
-#define WINDOW_WIDTH		1280
-#define WINDOW_HEIGHT		720
 #define WINDOW_TITLE		"Hungover"
 
-#define PLAYER_MOVE_SPEED	4.0f
+#define PLAYER_MOVE_SPEED	2.3f
 #define PLAYER_LERP_SPEED	8.0f
 #define HEADBOB_LERP_SPEED	4.2f
 #define HEADBOB_INTENSITY	0.08f
 #define CAM_SENSITIVITY		0.16f
 
-void error_callback(int a, const char *err) {
+/*void error_callback(int a, const char *err) {
 	printf("ERROR: %s CODE: %d\n", err, a);
-}
+}*/
 
 int main(void) {
 	GLFWwindow *window;
+	GLfloat window_width, window_height;
+	GLfloat aspect_ratio;
 
 	GLubyte draw_mode = 0;
 	GLubyte first_press = 0;
@@ -36,15 +39,22 @@ int main(void) {
 	GLdouble mouse_x, mouse_y;
 
 	player_t player;
+	GLfloat trip_intensity = 0.0f;
+
+	vec3 pistol_pos;
+	vec2 pistol_angle;
+	vec2 pistol_angle_tar;
 
 	GLuint shader_program;
 	GLuint light_shader_program;
 	texture_t textures[2];
-	texture_t test_textures[6];
+	texture_t room_textures[6];
+	texture_t gun_textures[2];
 	mesh_t mesh_cube;
 	mesh_t mesh_light;
 
 	model_t model_room;
+	model_t model_pistol;
 
 	mat4 matrix_projection;
 	mat4 matrix_view;
@@ -126,8 +136,6 @@ int main(void) {
 	glm_vec3_copy(GLM_VEC3_ONE, light_color);
 	glm_vec3_scale(light_color, 0.5f, light_diffuse_color);
 	glm_vec3_scale(light_diffuse_color, 0.2f, light_ambient_color);
-
-	glm_perspective(glm_rad(45.0f), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 1000.0f, matrix_projection);
 	glm_mat4_copy(GLM_MAT4_IDENTITY, matrix_view);
 
 	/* camera initialization */
@@ -136,18 +144,38 @@ int main(void) {
 	glm_vec3_copy(player.pos, player.pos_end);
 	glm_vec2_copy((vec2){0.0f, 0.0f}, player.rot);
 
+	glm_vec3_copy(player.pos, pistol_pos);
+	glm_vec3_add(pistol_pos, (vec3){cosf(glm_rad(player.rot[0])) * 0.3f, -0.22f, sinf(glm_rad(player.rot[0])) * 0.3f}, pistol_pos);
+	glm_vec3_add(pistol_pos, (vec3){0.2f * sinf(glm_rad(-player.rot[0])), 0.0f, 0.2f * cosf(glm_rad(player.rot[0]))}, pistol_pos);
+
+	glm_vec2_copy(GLM_VEC2_ZERO, pistol_angle);
+	pistol_angle[0] = GLM_PIf;
+
 	if(!glfwInit()) {
 		printf("ERROR: GLFW fucked up.\n");
 		return 1;
 	}
 
-	glfwSetErrorCallback(error_callback);
+	// glfwSetErrorCallback(error_callback);
 
 	/* creating a window */
+	{
+		GLFWmonitor *monitor;
+		const GLFWvidmode *mode;
+		int count;
+		monitor = *glfwGetMonitors(&count);
+		mode = glfwGetVideoMode(monitor);
+		window_width = mode->width * 0.75f;
+		window_height = mode->height * 0.75f;
+	}
+
+	aspect_ratio = window_width / window_height;
+	glm_perspective(14.0f, aspect_ratio, 0.1f, 1000.0f, matrix_projection);
+
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE, NULL, NULL);
+	window = glfwCreateWindow(window_width, window_height, WINDOW_TITLE, NULL, NULL);
 	if(!window) {
 		printf("ERROR: Window fucked up.\n");
 		glfwTerminate();
@@ -163,7 +191,7 @@ int main(void) {
 		return 1;
 	}
 
-	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+	glViewport(0, 0, window_width, window_height);
 
 	/* loading shaders */
 	shader_program = shader_create("res/shaders/vert.glsl", "res/shaders/frag.glsl");
@@ -201,21 +229,25 @@ int main(void) {
 	textures[0] = texture_create("res/textures/box-diffuse.png", TT_DIFFUSE);
 	textures[1] = texture_create("res/textures/box-specular.png", TT_SPECULAR);
 
-	test_textures[0] = texture_create("res/models/room/floor-diffuse.png", TT_DIFFUSE);
-	test_textures[1] = texture_create("res/models/room/black.png", TT_SPECULAR);
-	test_textures[2] = texture_create("res/models/room/wall-diffuse.png", TT_DIFFUSE);
-	test_textures[3] = test_textures[1];
-	test_textures[4] = texture_create("res/models/room/ceiling-diffuse.png", TT_DIFFUSE);
-	test_textures[5] = texture_create("res/models/room/ceiling-specular.png", TT_SPECULAR);
+	room_textures[0] = texture_create("res/models/room/floor-diffuse.png", TT_DIFFUSE);
+	room_textures[1] = texture_create("res/models/room/black.png", TT_SPECULAR);
+	room_textures[2] = texture_create("res/models/room/wall-diffuse.png", TT_DIFFUSE);
+	room_textures[3] = room_textures[1];
+	room_textures[4] = texture_create("res/models/room/ceiling-diffuse.png", TT_DIFFUSE);
+	room_textures[5] = texture_create("res/models/room/ceiling-specular.png", TT_SPECULAR);
+
+	gun_textures[0] = room_textures[4];
+	gun_textures[1] = room_textures[1];
 
 	/* loading meshes */
-	model_room = model_create("res/models/room/room.glb", test_textures, 6);
+	model_room = model_create("res/models/room/room.glb", room_textures, 6);
+	model_pistol = model_create("res/models/weapons/pistol/pistol.glb", gun_textures, 2);
 	mesh_cube = mesh_create(vertices, indices, textures, sizeof(vertices) / sizeof(vertex_t), sizeof(indices) / sizeof(GLuint), 2);
 	mesh_light = mesh_create(vertices, indices, NULL, sizeof(vertices) / sizeof(vertex_t), sizeof(indices) / sizeof(GLuint), 0);
 
 	glEnable(GL_DEPTH_TEST);
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	glfwSetCursorPos(window, (double)WINDOW_WIDTH / 2, (double)WINDOW_HEIGHT / 2);
+	glfwSetCursorPos(window, (double)window_width / 2, (double)window_height / 2);
 
 	time_now = glfwGetTime();
 	time_last = time_now;
@@ -232,8 +264,10 @@ int main(void) {
 
 		/* camera look */
 		glfwGetCursorPos(window, &mouse_x, &mouse_y);
-		mouse_x -= (double)WINDOW_WIDTH / 2;
-		mouse_y -= (double)WINDOW_HEIGHT / 2;
+		mouse_x -= (double)window_width / 2;
+		mouse_y -= (double)window_height / 2;
+
+		printf("%d\n", glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1));
 
 		player.rot[0] += mouse_x * CAM_SENSITIVITY;
 		player.rot[1] -= mouse_y * CAM_SENSITIVITY;
@@ -243,11 +277,11 @@ int main(void) {
 		if(player.rot[1] < -89.0f)
 			player.rot[1] = -89.0f;
 
-		if(player.rot[0] < -180.0f)
+		/* if(player.rot[0] < -180.0f)
 			player.rot[0] = 180.0f;
 
 		if(player.rot[0] > 180.0f)
-			player.rot[0] = -180.0f;
+			player.rot[0] = -180.0f; */
 
 		player.dir[0] = cos(glm_rad(player.rot[0])) * cos(glm_rad(player.rot[1]));
 		player.dir[1] = sin(glm_rad(player.rot[1]));
@@ -257,7 +291,7 @@ int main(void) {
 		glm_cross(player.dir, player.up, player.right);
 		glm_normalize(player.right);
 
-		glfwSetCursorPos(window, (double)WINDOW_WIDTH / 2, (double)WINDOW_HEIGHT / 2);
+		glfwSetCursorPos(window, (double)window_width / 2, (double)window_height / 2);
 
 		/* toggling wireframe */
 		if(glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS && !first_press) {
@@ -269,16 +303,19 @@ int main(void) {
 			first_press = 0;
 
 		{ /* handing player movement */
-			const float player_speed = (float)time_delta * PLAYER_MOVE_SPEED;
+			float player_speed = (float)time_delta * PLAYER_MOVE_SPEED;
 			vec3 player_move;
 
 			GLubyte any_key_pressed = 0;
-			GLubyte keys[4] = {
+			GLubyte keys[5] = {
 				glfwGetKey(window, GLFW_KEY_A),
 				glfwGetKey(window, GLFW_KEY_D),
 				glfwGetKey(window, GLFW_KEY_W),
 				glfwGetKey(window, GLFW_KEY_S),
+				glfwGetKey(window, GLFW_KEY_LEFT_SHIFT)
 			};
+
+			player_speed += keys[4] * PLAYER_MOVE_SPEED * time_delta;
 
 			glm_vec3_copy(GLM_VEC3_ZERO, player_move);
 			if(keys[0]) {
@@ -303,9 +340,12 @@ int main(void) {
 
 			player.headbob_intensity = glm_lerp(player.headbob_intensity, (float)(any_key_pressed > 0), time_delta * HEADBOB_LERP_SPEED);
 
+			player_move[1] = 0.0f;
 			glm_vec3_normalize(player_move);
 			glm_vec3_scale(player_move, player_speed, player_move);
 			glm_vec3_add(player.pos_end, player_move, player.pos_end);
+
+			player.headbob_timer += time_delta * player.headbob_intensity * ((float)(keys[4] + 1) * 0.75f);
 		}
 
 		/* TODO: Implement jumping */
@@ -322,7 +362,6 @@ int main(void) {
 
 		glm_mat4_copy(GLM_MAT4_IDENTITY, matrix_view);
 
-		player.headbob_timer += time_delta * player.headbob_intensity;
 		player.headbob[0] = cosf(player.headbob_timer * GLM_PIf * 2) * HEADBOB_INTENSITY;
 		player.headbob[1] = sinf(player.headbob_timer * GLM_PIf * 4) * HEADBOB_INTENSITY * 0.66f;
 		player.headbob[2] = cosf(player.headbob_timer * GLM_PIf * 2) * HEADBOB_INTENSITY;
@@ -330,9 +369,6 @@ int main(void) {
 		player.headbob[0] *= -sinf(glm_rad(player.rot[0]));
 		player.headbob[2] *= cosf(glm_rad(player.rot[0]));
 		glm_vec3_scale(player.headbob, player.headbob_intensity, player.headbob);
-
-		printf("%f\n", player.headbob_intensity);
-
 
 		glm_vec3_add(player.pos, player.dir, player.tar);
 		glm_vec3_add(player.pos, player.headbob, player.pos_bobbed);
@@ -352,10 +388,19 @@ int main(void) {
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		trip_intensity += time_delta * 0.12f; // fabsf((0.5f - trip_intensity) * time_delta);
+		if(trip_intensity > 1.0f)
+			trip_intensity = 1.0f;
+
+		glm_perspective(((cosf(time_elapsed * 3.14f) + 1.0f) * trip_intensity * 0.04f) + 14.0f, ((sinf(time_elapsed * 3.14f) + 1.0f) * trip_intensity * 0.04f) + aspect_ratio, 0.1f, 1000.0f, matrix_projection);
+
 		glUseProgram(shader_program);
 		glUniformMatrix4fv(glGetUniformLocation(shader_program, "view"), 1, GL_FALSE, (const GLfloat *)matrix_view);
 		glUniformMatrix4fv(glGetUniformLocation(shader_program, "projection"), 1, GL_FALSE, (const GLfloat *)matrix_projection);
 		glUniform3fv(glGetUniformLocation(shader_program, "view_pos"), 1, (const GLfloat *)player.pos);
+		glUniform1f(glGetUniformLocation(shader_program, "time"), time_elapsed);
+		glUniform1f(glGetUniformLocation(shader_program, "trip_intensity"), trip_intensity);
+
 		for(GLuint i = 0; i < 10; i++) {
 			mat4 model_mat;
 			float angle = 20 * i + (time_elapsed * GLM_PI * 12);
@@ -366,7 +411,7 @@ int main(void) {
 			// mesh_draw(mesh_cube, shader_program);
 		}
 
-		{
+		{ /* drawing room */
 			mat4 model_room_mat;
 			glm_mat4_copy(GLM_MAT4_IDENTITY, model_room_mat);
 
@@ -381,6 +426,34 @@ int main(void) {
 			model_draw(model_room, shader_program);
 		}
 
+		{ /* drawing pistol */
+			vec3 pistol_tar_pos;
+			vec3 pistol_bob;
+			mat4 model_pistol_mat;
+
+			/* pistol position */
+			glm_vec3_copy(player.pos_bobbed, pistol_tar_pos);
+			glm_vec3_add(pistol_tar_pos, (vec3){cosf(glm_rad(player.rot[0])) * 0.3f, 0.22f * player.dir[1] - 0.22f, sinf(glm_rad(player.rot[0])) * 0.3f}, pistol_tar_pos);
+			glm_vec3_add(pistol_tar_pos, (vec3){0.2f * sinf(glm_rad(-player.rot[0])), 0.0f, 0.2f * cosf(glm_rad(player.rot[0]))}, pistol_tar_pos);
+			glm_vec3_lerp(pistol_pos, pistol_tar_pos, time_delta * 48.0f, pistol_pos);
+
+			glm_mat4_copy(GLM_MAT4_IDENTITY, model_pistol_mat);
+			glm_translate(model_pistol_mat, pistol_pos);
+
+			/* apply headbob */
+			glm_vec3_copy(player.headbob, pistol_bob);
+			glm_vec3_scale(pistol_bob, -0.3f, pistol_bob);
+			glm_translate(model_pistol_mat, pistol_bob);
+
+			/* pistol rotation */
+			pistol_angle_tar[0] = glm_rad(-player.rot[0] + 180.0f);
+			pistol_angle[0] = glm_lerp(pistol_angle[0], pistol_angle_tar[0], time_delta * 16.0f);
+			glm_rotate(model_pistol_mat, pistol_angle[0], player.up);
+
+			glUniformMatrix4fv(glGetUniformLocation(shader_program, "model"), 1, GL_FALSE, (const GLfloat *)model_pistol_mat);
+			model_draw(model_pistol, shader_program);
+		}
+
 		glUseProgram(light_shader_program);
 		glUniformMatrix4fv(glGetUniformLocation(light_shader_program, "view"), 1, GL_FALSE, (const GLfloat *)matrix_view);
 		glUniformMatrix4fv(glGetUniformLocation(light_shader_program, "projection"), 1, GL_FALSE, (const GLfloat *)matrix_projection);
@@ -393,12 +466,14 @@ int main(void) {
 			glUniformMatrix4fv(glGetUniformLocation(light_shader_program, "model"), 1, GL_FALSE, (const GLfloat *)light_mat);
 			mesh_draw(mesh_light, light_shader_program);
 		}
+
 		}
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
 
+	model_destroy(&model_pistol);
 	model_destroy(&model_room);
 	mesh_destroy(&mesh_light);
 	mesh_destroy(&mesh_cube);

@@ -28,7 +28,6 @@ void model_process_node(model_t *m, struct aiNode *node, const struct aiScene *s
 		m->meshes = realloc(m->meshes, m->mesh_count * sizeof(mesh_t));
 	}
 
-	printf("%d\n", node->mNumMeshes);
 	for(i = m->mesh_count - node->mNumMeshes; i < m->mesh_count; i++) {
 		const struct aiMesh *const mesh = scene->mMeshes[node->mMeshes[i]];
 		GLuint j;
@@ -36,6 +35,7 @@ void model_process_node(model_t *m, struct aiNode *node, const struct aiScene *s
 		GLuint *indices = NULL;
 		texture_t selected_textures[2];
 
+		GLuint texture_count = 0;
 		GLuint indices_counted = 0;
 
 		vertices = malloc(mesh->mNumVertices * sizeof(vertex_t));
@@ -66,10 +66,13 @@ void model_process_node(model_t *m, struct aiNode *node, const struct aiScene *s
 			indices_counted = k;
 		}
 
-		selected_textures[0] = textures[0 + (i * 2)];
-		selected_textures[1] = textures[1 + (i * 2)];
+		if(textures) {
+			selected_textures[0] = textures[0 + (i * 2)];
+			selected_textures[1] = textures[1 + (i * 2)];
+			texture_count = 2;
+		}
 
-		m->meshes[i] = mesh_create(vertices, indices, selected_textures, mesh->mNumVertices, mesh->mNumFaces * 3, 2);
+		m->meshes[i] = mesh_create(vertices, indices, selected_textures, mesh->mNumVertices, mesh->mNumFaces * 3, texture_count);
 		free(indices);
 		free(vertices);
 		indices = NULL;

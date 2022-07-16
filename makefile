@@ -1,6 +1,6 @@
 CC=gcc
 INC=-I./include/ -I/usr/include -I/usr/local/include/
-LIB=-lglfw3 -lGL -lX11 -lpthread -lXrandr -lXi -ldl -lm -lassimp
+LIB=-lglfw -lGL -lX11 -lpthread -lXrandr -ldl -lm -lassimp
 
 CFLAGS=-std=c99
 
