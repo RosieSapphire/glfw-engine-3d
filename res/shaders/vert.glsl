@@ -17,6 +17,7 @@ uniform mat4 projection;
 
 uniform float time;
 uniform float trip_intensity;
+uniform int render_layer;
 
 float rand(float n) {
 	return fract(sin(n) * 43758.5453123);
@@ -34,7 +35,7 @@ void main() {
 	vec2 trip_offset;
 	trip_offset.x = perlin_noise((time * 1.57) + gl_Position.y) * (trip_intensity / 5);
 	trip_offset.y = cos(time * 0.785 + gl_Position.z) * (trip_intensity / 5);
-	gl_Position += vec4(trip_offset, 0.0, 0.0);
+	gl_Position += vec4(trip_offset, 0.0, 0.0) * float(render_layer == 0);
 
 	normal = mat3(transpose(inverse(model))) * a_normal;
 	uv = a_uv;

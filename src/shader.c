@@ -14,6 +14,11 @@ GLuint shader_create(const char *vert_path, const char *frag_path) {
 
 	vertex_shader = glCreateShader(GL_VERTEX_SHADER);
 	vertex_shader_source = file_load_contents(vert_path);
+	if(!vertex_shader_source) {
+		printf("ERROR: Couldn't find Vertex Shader code.\n");
+		return 0;
+	}
+
 	glShaderSource(vertex_shader, 1, (const GLchar * const *)&vertex_shader_source, NULL);
 	glCompileShader(vertex_shader);
 
@@ -32,6 +37,11 @@ GLuint shader_create(const char *vert_path, const char *frag_path) {
 	/* loading and compiling fragment shader */
 	fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
 	fragment_shader_source = file_load_contents(frag_path);
+	if(!fragment_shader_source) {
+		printf("ERROR: Couldn't find Fragment Shader code.\n");
+		return 0;
+	}
+
 	glShaderSource(fragment_shader, 1, (const GLchar * const *)&fragment_shader_source, NULL);
 	glCompileShader(fragment_shader);
 

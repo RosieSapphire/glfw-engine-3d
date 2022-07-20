@@ -24,9 +24,20 @@
 }*/
 
 int main(void) {
+	const GLuint sample_count = 4;
+
 	GLFWwindow *window;
 	GLfloat window_width, window_height;
 	GLfloat aspect_ratio;
+
+	GLuint fbo;
+	GLuint fbo_multi;
+	GLuint rbo;
+	GLuint screen_vao;
+	GLuint screen_vbo;
+
+	GLuint screen_texture;
+	GLuint screen_texture_multi;
 
 	GLubyte draw_mode = 0;
 	GLubyte first_press = 0;
@@ -35,6 +46,10 @@ int main(void) {
 	GLdouble time_last;
 	GLdouble time_delta;
 	GLdouble time_elapsed = 0.0;
+
+	GLdouble fps_accumulated = 0.0f;
+	GLdouble fps_timer = 0.0f;
+	GLuint fps_count = 0;
 
 	GLdouble mouse_x, mouse_y;
 
@@ -45,8 +60,9 @@ int main(void) {
 	vec2 pistol_angle;
 	vec2 pistol_angle_tar;
 
-	GLuint shader_program;
-	GLuint light_shader_program;
+	GLuint shader;
+	GLuint light_shader;
+	GLuint screen_shader;
 	texture_t textures[2];
 	texture_t room_textures[6];
 	texture_t gun_textures[2];
@@ -96,16 +112,16 @@ int main(void) {
 	};
 
 	GLuint indices[] = {
-		0, 1, 2,
-		2, 1, 3,
+		2, 1, 0,
+		3, 1, 2,
 		4, 5, 6,
 		6, 5, 7,
-		8, 9, 10,
-		10, 9, 11,
+		10, 9, 8,
+		11, 9, 10,
 		12, 13, 14,
 		14, 13, 15,
-		16, 17, 18,
-		18, 17, 19,
+		18, 17, 16,
+		19, 17, 18,
 		20, 21, 22,
 		22, 21, 23
 	};
@@ -128,6 +144,16 @@ int main(void) {
 		{-4.0f,  2.5f,   3.0f},
 		{ 4.0f,  2.5f,   3.0f},
 		{ 4.0f,  2.5f,   0.25f},
+	};
+
+	GLfloat screen_vertices[] = {
+		-1.0f, -1.0f, 0.0f, 0.0f,
+		 1.0f, -1.0f, 1.0f, 0.0f,
+		-1.0f,  1.0f, 0.0f, 1.0f,
+
+		-1.0f,  1.0f, 0.0f, 1.0f,
+		 1.0f, -1.0f, 1.0f, 0.0f,
+		 1.0f,  1.0f, 1.0f, 1.0f,
 	};
 
 	glm_vec3_copy(GLM_VEC3_ZERO, player.headbob);
@@ -194,36 +220,36 @@ int main(void) {
 	glViewport(0, 0, window_width, window_height);
 
 	/* loading shaders */
-	shader_program = shader_create("res/shaders/vert.glsl", "res/shaders/frag.glsl");
-	glUseProgram(shader_program);
-	glUniform3f(glGetUniformLocation(shader_program, "material.specular_color"), 0.5f, 0.5f, 0.5f);
-	glUniform1f(glGetUniformLocation(shader_program, "material.shininess"), 32.0f);
+	shader = shader_create("res/shaders/vert.glsl", "res/shaders/frag.glsl");
+	glUseProgram(shader);
+	glUniform3f(glGetUniformLocation(shader, "material.specular_color"), 0.5f, 0.5f, 0.5f);
+	glUniform1f(glGetUniformLocation(shader, "material.shininess"), 32.0f);
 
-	glUniform3f(glGetUniformLocation(shader_program, "light_dir.dir"), 0.0f, 0.0f, -1.0f);
-	glUniform3fv(glGetUniformLocation(shader_program, "light_dir.ambient_color"), 1, (const GLfloat *)light_ambient_color);
-	glUniform3fv(glGetUniformLocation(shader_program, "light_dir.diffuse_color"), 1, (const GLfloat *)light_diffuse_color);
-	glUniform3f(glGetUniformLocation(shader_program, "light_dir.specular_color"), 1.0f, 1.0f, 1.0f);
+	glUniform3f(glGetUniformLocation(shader, "light_dir.dir"), 0.0f, 0.0f, -1.0f);
+	glUniform3fv(glGetUniformLocation(shader, "light_dir.ambient_color"), 1, (const GLfloat *)light_ambient_color);
+	glUniform3fv(glGetUniformLocation(shader, "light_dir.diffuse_color"), 1, (const GLfloat *)light_diffuse_color);
+	glUniform3f(glGetUniformLocation(shader, "light_dir.specular_color"), 1.0f, 1.0f, 1.0f);
 
 	for(GLuint i = 0; i < 4; i++) {
 		char buffer[128] = { 0 };
 		sprintf(buffer, "light_points[%d].pos", i);
-		glUniform3fv(glGetUniformLocation(shader_program, buffer), 1, (const GLfloat *)light_point_positions[i]);
+		glUniform3fv(glGetUniformLocation(shader, buffer), 1, (const GLfloat *)light_point_positions[i]);
 		sprintf(buffer, "light_points[%d].ambient_color", i);
-		glUniform3fv(glGetUniformLocation(shader_program, buffer), 1, (const GLfloat *)light_ambient_color);
+		glUniform3fv(glGetUniformLocation(shader, buffer), 1, (const GLfloat *)light_ambient_color);
 		sprintf(buffer, "light_points[%d].diffuse_color", i);
-		glUniform3fv(glGetUniformLocation(shader_program, buffer), 1, (const GLfloat *)light_diffuse_color);
+		glUniform3fv(glGetUniformLocation(shader, buffer), 1, (const GLfloat *)light_diffuse_color);
 		sprintf(buffer, "light_points[%d].specular_color", i);
-		glUniform3f(glGetUniformLocation(shader_program, buffer), 1.0f, 1.0f, 1.0f);
+		glUniform3f(glGetUniformLocation(shader, buffer), 1.0f, 1.0f, 1.0f);
 		sprintf(buffer, "light_points[%d].constant", i);
-		glUniform1f(glGetUniformLocation(shader_program, buffer), 1.0f);
+		glUniform1f(glGetUniformLocation(shader, buffer), 1.0f);
 		sprintf(buffer, "light_points[%d].linear", i);
-		glUniform1f(glGetUniformLocation(shader_program, buffer), 0.09f);
+		glUniform1f(glGetUniformLocation(shader, buffer), 0.09f);
 		sprintf(buffer, "light_points[%d].quadratic", i);
-		glUniform1f(glGetUniformLocation(shader_program, buffer), 0.032f);
+		glUniform1f(glGetUniformLocation(shader, buffer), 0.032f);
 	}
 
-	light_shader_program = shader_create("res/shaders/light-vert.glsl", "res/shaders/light-frag.glsl");
-	glUseProgram(light_shader_program);
+	light_shader = shader_create("res/shaders/light-vert.glsl", "res/shaders/light-frag.glsl");
+	glUseProgram(light_shader);
 
 	/* loading textures */
 	textures[0] = texture_create("res/textures/box-diffuse.png", TT_DIFFUSE);
@@ -246,11 +272,86 @@ int main(void) {
 	mesh_light = mesh_create(vertices, indices, NULL, sizeof(vertices) / sizeof(vertex_t), sizeof(indices) / sizeof(GLuint), 0);
 
 	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+	glFrontFace(GL_CCW);
+
+	glEnable(GL_MULTISAMPLE);
+
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glfwSetCursorPos(window, (double)window_width / 2, (double)window_height / 2);
 
 	time_now = glfwGetTime();
 	time_last = time_now;
+
+	/* getting the multisample framebuffer set up */
+	glGenFramebuffers(1, &fbo_multi);
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo_multi);
+
+	glGenTextures(1, &screen_texture_multi);
+	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, screen_texture_multi);
+
+	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, sample_count, GL_RGB, window_width, window_height, GL_TRUE);
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, screen_texture_multi, 0);
+
+	/* getting the renderbuffer set up */
+	glGenRenderbuffers(1, &rbo);
+	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+	glRenderbufferStorageMultisample(GL_RENDERBUFFER, sample_count, GL_DEPTH24_STENCIL8, window_width, window_height);
+	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+
+	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+		printf("Multisampled framebuffer fucked up.\n");
+		return 1;
+	}
+
+	/* getting the regular framebuffer set up */
+	glGenFramebuffers(1, &fbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+	glGenTextures(1, &screen_texture);
+	glBindTexture(GL_TEXTURE_2D, screen_texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, window_width, window_height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, screen_texture, 0);
+
+	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+		printf("Main framebuffer fucked up.\n");
+		return 1;
+	}
+
+	/* binding the render buffer to a quad */
+	screen_shader = shader_create("res/shaders/screen-vert.glsl", "res/shaders/screen-frag.glsl");
+	glUseProgram(screen_shader);
+
+	glGenVertexArrays(1, &screen_vao);
+	glBindVertexArray(screen_vao);
+
+	glGenBuffers(1, &screen_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, screen_vbo);
+	glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(vertex_t), screen_vertices, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), NULL);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (GLvoid *)(2 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
+
+	glBindVertexArray(0);
 
 	/* main loop */
 	while(!glfwWindowShouldClose(window)) {
@@ -262,12 +363,25 @@ int main(void) {
 		time_last = time_now;
 		time_elapsed += time_delta;
 
+		fps_timer += time_delta;
+		if(fps_timer >= 1.0f) {
+			fps_accumulated = 0.0f;
+			fps_count = 0;
+			fps_timer = 0.0f;
+		}
+
+		fps_accumulated += 1.0 / time_delta;
+		fps_count++;
+
+		printf("FPS: %f\n", fps_accumulated / fps_count);
+
 		/* camera look */
 		glfwGetCursorPos(window, &mouse_x, &mouse_y);
 		mouse_x -= (double)window_width / 2;
 		mouse_y -= (double)window_height / 2;
 
-		printf("%d\n", glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1));
+		/* TODO: Get mouse button for shit */
+		// printf("%d\n", glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1));
 
 		player.rot[0] += mouse_x * CAM_SENSITIVITY;
 		player.rot[1] -= mouse_y * CAM_SENSITIVITY;
@@ -379,27 +493,29 @@ int main(void) {
 		glm_vec3_scale(light_diffuse_color, 0.2f, light_ambient_color);
 
 		/* drawing */
-		for(GLuint fuck = 0; fuck < 1; fuck++) {
 		if(draw_mode)
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		else
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
+		glBindFramebuffer(GL_FRAMEBUFFER, fbo_multi);
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glEnable(GL_DEPTH_TEST);
 
-		trip_intensity += time_delta * 0.12f; // fabsf((0.5f - trip_intensity) * time_delta);
+		// trip_intensity += time_delta * 0.12f; // fabsf((0.5f - trip_intensity) * time_delta);
 		if(trip_intensity > 1.0f)
 			trip_intensity = 1.0f;
 
 		glm_perspective(((cosf(time_elapsed * 3.14f) + 1.0f) * trip_intensity * 0.04f) + 14.0f, ((sinf(time_elapsed * 3.14f) + 1.0f) * trip_intensity * 0.04f) + aspect_ratio, 0.1f, 1000.0f, matrix_projection);
 
-		glUseProgram(shader_program);
-		glUniformMatrix4fv(glGetUniformLocation(shader_program, "view"), 1, GL_FALSE, (const GLfloat *)matrix_view);
-		glUniformMatrix4fv(glGetUniformLocation(shader_program, "projection"), 1, GL_FALSE, (const GLfloat *)matrix_projection);
-		glUniform3fv(glGetUniformLocation(shader_program, "view_pos"), 1, (const GLfloat *)player.pos);
-		glUniform1f(glGetUniformLocation(shader_program, "time"), time_elapsed);
-		glUniform1f(glGetUniformLocation(shader_program, "trip_intensity"), trip_intensity);
+		glUseProgram(shader);
+		glUniformMatrix4fv(glGetUniformLocation(shader, "view"), 1, GL_FALSE, (const GLfloat *)matrix_view);
+		glUniformMatrix4fv(glGetUniformLocation(shader, "projection"), 1, GL_FALSE, (const GLfloat *)matrix_projection);
+		glUniform3fv(glGetUniformLocation(shader, "view_pos"), 1, (const GLfloat *)player.pos);
+		glUniform1f(glGetUniformLocation(shader, "time"), time_elapsed);
+		glUniform1f(glGetUniformLocation(shader, "trip_intensity"), trip_intensity);
+		glUniform1i(glGetUniformLocation(shader, "render_layer"), 0);
 
 		for(GLuint i = 0; i < 10; i++) {
 			mat4 model_mat;
@@ -407,8 +523,8 @@ int main(void) {
 			glm_mat4_copy(GLM_MAT4_IDENTITY, model_mat);
 			glm_translate(model_mat, cube_positions[i]);
 			glm_rotate(model_mat, glm_rad(angle), (vec3){1.0f, 0.3f, 0.5f});
-			glUniformMatrix4fv(glGetUniformLocation(shader_program, "model"), 1, GL_FALSE, (const GLfloat *)model_mat);
-			// mesh_draw(mesh_cube, shader_program);
+			glUniformMatrix4fv(glGetUniformLocation(shader, "model"), 1, GL_FALSE, (const GLfloat *)model_mat);
+			// mesh_draw(mesh_cube, shader);
 		}
 
 		{ /* drawing room */
@@ -417,14 +533,16 @@ int main(void) {
 
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, textures[0].id);
-			glUniform1i(glGetUniformLocation(shader_program, "material.tex_diffuse0"), 0);
+			glUniform1i(glGetUniformLocation(shader, "material.tex_diffuse0"), 0);
 			glActiveTexture(GL_TEXTURE1);
 			glBindTexture(GL_TEXTURE_2D, textures[1].id);
-			glUniform1i(glGetUniformLocation(shader_program, "material.tex_specular0"), 1);
+			glUniform1i(glGetUniformLocation(shader, "material.tex_specular0"), 1);
 
-			glUniformMatrix4fv(glGetUniformLocation(shader_program, "model"), 1, GL_FALSE, (const GLfloat *)model_room_mat);
-			model_draw(model_room, shader_program);
+			glUniformMatrix4fv(glGetUniformLocation(shader, "model"), 1, GL_FALSE, (const GLfloat *)model_room_mat);
+			model_draw(model_room, shader);
 		}
+
+		glUniform1i(glGetUniformLocation(shader, "render_layer"), 1);
 
 		{ /* drawing pistol */
 			vec3 pistol_tar_pos;
@@ -450,28 +568,48 @@ int main(void) {
 			pistol_angle[0] = glm_lerp(pistol_angle[0], pistol_angle_tar[0], time_delta * 16.0f);
 			glm_rotate(model_pistol_mat, pistol_angle[0], player.up);
 
-			glUniformMatrix4fv(glGetUniformLocation(shader_program, "model"), 1, GL_FALSE, (const GLfloat *)model_pistol_mat);
-			model_draw(model_pistol, shader_program);
+			glUniformMatrix4fv(glGetUniformLocation(shader, "model"), 1, GL_FALSE, (const GLfloat *)model_pistol_mat);
+			model_draw(model_pistol, shader);
 		}
 
-		glUseProgram(light_shader_program);
-		glUniformMatrix4fv(glGetUniformLocation(light_shader_program, "view"), 1, GL_FALSE, (const GLfloat *)matrix_view);
-		glUniformMatrix4fv(glGetUniformLocation(light_shader_program, "projection"), 1, GL_FALSE, (const GLfloat *)matrix_projection);
-		glUniform3fv(glGetUniformLocation(light_shader_program, "light_color"), 1, (const GLfloat *)light_color);
+		glUseProgram(light_shader);
+		glUniformMatrix4fv(glGetUniformLocation(light_shader, "view"), 1, GL_FALSE, (const GLfloat *)matrix_view);
+		glUniformMatrix4fv(glGetUniformLocation(light_shader, "projection"), 1, GL_FALSE, (const GLfloat *)matrix_projection);
+		glUniform3fv(glGetUniformLocation(light_shader, "light_color"), 1, (const GLfloat *)light_color);
 		for(GLuint i = 0; i < 4; i++) {
 			mat4 light_mat;
 			glm_mat4_copy(GLM_MAT4_IDENTITY, light_mat);
 			glm_translate(light_mat, light_point_positions[i]);
 			glm_scale(light_mat, (vec3){0.2f, 0.2f, 0.2f});
-			glUniformMatrix4fv(glGetUniformLocation(light_shader_program, "model"), 1, GL_FALSE, (const GLfloat *)light_mat);
-			mesh_draw(mesh_light, light_shader_program);
+			glUniformMatrix4fv(glGetUniformLocation(light_shader, "model"), 1, GL_FALSE, (const GLfloat *)light_mat);
+			mesh_draw(mesh_light, light_shader);
 		}
 
-		}
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo_multi);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+		glBlitFramebuffer(0, 0, window_width, window_height, 0, 0, window_width, window_height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+
+		glUseProgram(screen_shader);
+		glUniform1i(glGetUniformLocation(screen_shader, "screen_texture"), 1);
+		glUniform1f(glGetUniformLocation(screen_shader, "time"), time_elapsed);
+		glUniform1f(glGetUniformLocation(screen_shader, "trip_intensity"), trip_intensity);
+		glBindTexture(GL_TEXTURE_2D, screen_texture);
+
+		glBindVertexArray(screen_vao);
+		glDisable(GL_DEPTH_TEST);
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glDeleteFramebuffers(1, &fbo);
 
 	model_destroy(&model_pistol);
 	model_destroy(&model_room);
@@ -479,8 +617,9 @@ int main(void) {
 	mesh_destroy(&mesh_cube);
 	texture_destroy(&textures[1]);
 	texture_destroy(&textures[0]);
-	glDeleteShader(light_shader_program);
-	glDeleteShader(shader_program);
+	glDeleteShader(screen_shader);
+	glDeleteShader(light_shader);
+	glDeleteShader(shader);
 
 	glfwTerminate();
 

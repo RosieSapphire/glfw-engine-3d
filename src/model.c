@@ -18,7 +18,7 @@ model_t model_create(const char *path, texture_t *textures, const GLuint texture
 }
 
 void model_process_node(model_t *m, struct aiNode *node, const struct aiScene *scene, texture_t *textures, const GLuint texture_count) {
-	GLuint i;
+	GLuint i, j, k;
 
 	if(!m->mesh_count) {
 		m->mesh_count = node->mNumMeshes;
@@ -30,13 +30,13 @@ void model_process_node(model_t *m, struct aiNode *node, const struct aiScene *s
 
 	for(i = m->mesh_count - node->mNumMeshes; i < m->mesh_count; i++) {
 		const struct aiMesh *const mesh = scene->mMeshes[node->mMeshes[i]];
-		GLuint j;
 		vertex_t *vertices = NULL;
 		GLuint *indices = NULL;
 		texture_t selected_textures[2];
 
 		GLuint texture_count = 0;
-		GLuint indices_counted = 0;
+		GLuint index_count = 0;
+		// GLuint bone_count = 0;
 
 		vertices = malloc(mesh->mNumVertices * sizeof(vertex_t));
 		for(j = 0; j < mesh->mNumVertices; j++) {
@@ -57,13 +57,12 @@ void model_process_node(model_t *m, struct aiNode *node, const struct aiScene *s
 
 		indices = malloc(mesh->mNumFaces * 3 * sizeof(GLuint));
 		for(j = 0; j < mesh->mNumFaces; j++) {
-			GLuint k;
 			const struct aiFace face = mesh->mFaces[j];
-			for(k = indices_counted; k < indices_counted + face.mNumIndices; k++) {
-				indices[k] = face.mIndices[k - indices_counted];
+			for(k = index_count; k < index_count + face.mNumIndices; k++) {
+				indices[k] = face.mIndices[k - index_count];
 			}
 
-			indices_counted = k;
+			index_count = k;
 		}
 
 		if(textures) {
@@ -71,6 +70,8 @@ void model_process_node(model_t *m, struct aiNode *node, const struct aiScene *s
 			selected_textures[1] = textures[1 + (i * 2)];
 			texture_count = 2;
 		}
+
+		/* TODO: Replace the bone code with something better here */
 
 		m->meshes[i] = mesh_create(vertices, indices, selected_textures, mesh->mNumVertices, mesh->mNumFaces * 3, texture_count);
 		free(indices);

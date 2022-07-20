@@ -39,6 +39,9 @@ float perlin_noise(float p){
 	return mix(rand(fl), rand(fl + 1.0), fc);
 }
 
+float near = 0.1;
+float far = 1000.0;
+
 vec3 get_light_point(light_point_t l, vec3 normal, vec3 frag_pos, vec3 view_dir) {
 	vec3 light_dir = normalize(l.pos - frag_pos);
 	float diffuse_amount = max(dot(normal, light_dir), 0.0);
